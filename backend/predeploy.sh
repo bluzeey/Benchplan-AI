@@ -2,7 +2,19 @@
 set -e
 
 echo "=== Step 1: Resetting database ==="
-echo 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO postgres;' | python manage.py dbshell
+python -c "
+import psycopg2
+import os
+conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+cur = conn.cursor()
+cur.execute('DROP SCHEMA IF EXISTS public CASCADE;')
+cur.execute('CREATE SCHEMA public;')
+cur.execute('GRANT ALL ON SCHEMA public TO postgres;')
+conn.commit()
+cur.close()
+conn.close()
+print('Database reset successful')
+"
 echo "✓ Database reset"
 
 echo "=== Step 2: Running migrations ==="
