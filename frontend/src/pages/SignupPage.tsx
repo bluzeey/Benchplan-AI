@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { FlaskConical, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { useAuth } from "@/app/auth-provider"
 
 export function SignupPage() {
   const { signup, error } = useAuth()
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -35,6 +36,7 @@ export function SignupPage() {
     setIsLoading(true)
     try {
       await signup(formData)
+      navigate("/dashboard")
     } catch {
       // Error is handled by auth provider
     } finally {

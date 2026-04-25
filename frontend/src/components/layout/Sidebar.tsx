@@ -91,7 +91,7 @@ export function Sidebar() {
 
   const handleLogout = async () => {
     await logout()
-    navigate("/login")
+    // Navigation will happen automatically via PublicOnlyLayout redirect
   }
 
   const userInitials = user

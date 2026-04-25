@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom"
+import { createBrowserRouter, Navigate, Outlet, useLocation } from "react-router-dom"
 import { useAuth } from "@/app/auth-provider"
 
 import { AppShell } from "@/components/layout/AppShell"
@@ -13,9 +13,10 @@ import { RunPage } from "@/pages/RunPage"
 import { SettingsSourcesPage } from "@/pages/SettingsSourcesPage"
 import { SignupPage } from "@/pages/SignupPage"
 
-// Protected route wrapper
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+// Protected layout wrapper - uses Outlet to defer rendering
+function ProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth()
+  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -26,14 +27,18 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace state={{ from: location }} />
   }
 
-  return <>{children}</>
+  return (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  )
 }
 
-// Public only route (redirect if logged in)
-function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+// Public only layout - redirects to dashboard if logged in
+function PublicOnlyLayout() {
   const { isAuthenticated, isLoading } = useAuth()
 
   if (isLoading) {
@@ -48,102 +53,28 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/dashboard" replace />
   }
 
-  return <>{children}</>
+  return <Outlet />
 }
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    element: (
-      <PublicOnlyRoute>
-        <LandingPage />
-      </PublicOnlyRoute>
-    ),
+    element: <PublicOnlyLayout />,
+    children: [
+      { path: "/", element: <LandingPage /> },
+      { path: "/signup", element: <SignupPage /> },
+      { path: "/login", element: <LoginPage /> },
+    ],
   },
   {
-    path: "/signup",
-    element: (
-      <PublicOnlyRoute>
-        <SignupPage />
-      </PublicOnlyRoute>
-    ),
-  },
-  {
-    path: "/login",
-    element: (
-      <PublicOnlyRoute>
-        <LoginPage />
-      </PublicOnlyRoute>
-    ),
-  },
-  {
-    path: "/dashboard",
-    element: (
-      <ProtectedRoute>
-        <AppShell>
-          <DashboardPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/projects/new",
-    element: (
-      <ProtectedRoute>
-        <AppShell>
-          <NewProjectPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/projects/:projectId",
-    element: (
-      <ProtectedRoute>
-        <AppShell>
-          <ProjectPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/runs/:runId",
-    element: (
-      <ProtectedRoute>
-        <AppShell>
-          <RunPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/plans/:planId",
-    element: (
-      <ProtectedRoute>
-        <AppShell>
-          <PlanPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/plans/:planId/review",
-    element: (
-      <ProtectedRoute>
-        <AppShell>
-          <ReviewPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/settings/sources",
-    element: (
-      <ProtectedRoute>
-        <AppShell>
-          <SettingsSourcesPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
+    element: <ProtectedLayout />,
+    children: [
+      { path: "/dashboard", element: <DashboardPage /> },
+      { path: "/projects/new", element: <NewProjectPage /> },
+      { path: "/projects/:projectId", element: <ProjectPage /> },
+      { path: "/runs/:runId", element: <RunPage /> },
+      { path: "/plans/:planId", element: <PlanPage /> },
+      { path: "/plans/:planId/review", element: <ReviewPage /> },
+      { path: "/settings/sources", element: <SettingsSourcesPage /> },
+    ],
   },
 ])

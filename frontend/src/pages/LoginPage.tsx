@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { FlaskConical, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { useAuth } from "@/app/auth-provider"
 
 export function LoginPage() {
   const { login, error } = useAuth()
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
@@ -19,6 +20,7 @@ export function LoginPage() {
     setIsLoading(true)
     try {
       await login(formData.email, formData.password)
+      navigate("/dashboard")
     } catch {
       // Error is handled by auth provider
     } finally {

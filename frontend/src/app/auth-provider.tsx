@@ -1,5 +1,4 @@
 import { ReactNode, createContext, useContext, useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { z } from "zod"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 
@@ -22,10 +21,11 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
-  signup: (data: SignupData) => Promise<void>
+  login: (email: string, password: string) => Promise<User>
+  signup: (data: SignupData) => Promise<User>
   logout: () => Promise<void>
   error: string | null
+  setUser: (user: User | null) => void
 }
 
 interface SignupData {
@@ -42,7 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const navigate = useNavigate()
 
   // Check if user is already logged in on mount
   useEffect(() => {
@@ -61,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth()
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     setError(null)
     try {
       const response = await apiFetch(
@@ -73,14 +72,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       )
       setUser(response.user)
-      navigate("/dashboard")
+      return response.user
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed")
       throw err
     }
   }
 
-  const signup = async (data: SignupData) => {
+  const signup = async (data: SignupData): Promise<User> => {
     setError(null)
     try {
       const response = await apiFetch(
@@ -92,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       )
       setUser(response.user)
-      navigate("/dashboard")
+      return response.user
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed")
       throw err
@@ -104,7 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiFetchRaw("/api/auth/logout/", { method: "POST" })
     } finally {
       setUser(null)
-      navigate("/login")
     }
   }
 
@@ -118,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signup,
         logout,
         error,
+        setUser,
       }}
     >
       {children}
