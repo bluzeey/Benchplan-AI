@@ -2,7 +2,7 @@ import { z } from "zod"
 
 // Auth Schemas
 export const UserSchema = z.object({
-  id: z.string(),
+  id: z.union([z.string(), z.number()]).transform((val) => String(val)),
   email: z.string(),
   first_name: z.string(),
   last_name: z.string(),
