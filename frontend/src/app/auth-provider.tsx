@@ -3,7 +3,7 @@ import { z } from "zod"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 
 const UserSchema = z.object({
-  id: z.string(),
+  id: z.union([z.string(), z.number()]).transform((val) => String(val)),
   email: z.string(),
   first_name: z.string(),
   last_name: z.string(),
@@ -15,7 +15,13 @@ const AuthResponseSchema = z.object({
   message: z.string(),
 })
 
-export type User = z.infer<typeof UserSchema>
+export type User = {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  full_name: string
+}
 
 interface AuthContextType {
   user: User | null
@@ -47,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const userData = await apiFetch("/api/auth/me/", UserSchema)
+        const userData = await apiFetch("/api/auth/me/", UserSchema) as User
         setUser(userData)
       } catch {
         // User is not logged in, that's fine
@@ -71,8 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ email, password }),
         }
       )
-      setUser(response.user)
-      return response.user
+      const user = response.user as User
+      setUser(user)
+      return user
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed")
       throw err
@@ -90,8 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify(data),
         }
       )
-      setUser(response.user)
-      return response.user
+      const user = response.user as User
+      setUser(user)
+      return user
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed")
       throw err
