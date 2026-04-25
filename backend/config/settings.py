@@ -20,7 +20,14 @@ def env_list(name: str, default: str = "") -> list[str]:
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
 DEBUG = env_bool("DJANGO_DEBUG", True)
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "*")
+if "*" not in ALLOWED_HOSTS:
+    for railway_host in (
+        os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip(),
+        os.getenv("RAILWAY_PRIVATE_DOMAIN", "").strip(),
+    ):
+        if railway_host and railway_host not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(railway_host)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
