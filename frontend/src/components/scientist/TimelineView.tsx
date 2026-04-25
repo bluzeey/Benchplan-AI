@@ -1,25 +1,30 @@
 import { z } from "zod"
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TimelinePhaseSchema } from "@/lib/schemas"
 
 type TimelinePhase = z.infer<typeof TimelinePhaseSchema>
 
 export function TimelineView({ phases }: { phases: TimelinePhase[] }) {
   return (
-    <div className="card">
-      <h3>Timeline</h3>
-      {phases.map((phase) => (
-        <div key={phase.id} className="timeline-item">
-          <strong>
-            {phase.phase_number}. {phase.title}
-          </strong>
-          <p>
-            Week {phase.start_week} to {phase.end_week} • {phase.parallelizable ? "Parallelizable" : "Sequential"}
-          </p>
-          <p className="muted mono">Dependencies: {phase.dependencies.length ? phase.dependencies.join(", ") : "none"}</p>
-          <p className="muted">Risk: {phase.risk_of_delay} • Mitigation: {phase.mitigation}</p>
-        </div>
-      ))}
-    </div>
+    <Card className="rounded-2xl border-border/70">
+      <CardHeader>
+        <CardTitle>Timeline</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {phases.map((phase) => (
+          <div key={phase.id} className="rounded-xl border border-border/70 bg-background/50 p-3">
+            <p className="text-sm font-semibold">
+              {phase.phase_number}. {phase.title}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Week {phase.start_week} to {phase.end_week} - {phase.parallelizable ? "Parallelizable" : "Sequential"}
+            </p>
+            <p className="mt-1 font-mono text-xs text-muted-foreground">Dependencies: {phase.dependencies.length ? phase.dependencies.join(", ") : "none"}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Risk: {phase.risk_of_delay} - Mitigation: {phase.mitigation}</p>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   )
 }

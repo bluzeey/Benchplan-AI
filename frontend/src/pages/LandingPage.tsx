@@ -1,9 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
+import { Activity, Sparkles } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { z } from "zod"
 
 import { HypothesisInput } from "@/components/scientist/HypothesisInput"
 import { SampleHypothesisChips } from "@/components/scientist/SampleHypothesisChips"
+import { Badge } from "@/components/ui/badge"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ProjectSchema } from "@/lib/schemas"
 
@@ -54,41 +56,41 @@ export function LandingPage() {
   })
 
   return (
-    <div className="landing">
-      <div className="hero-grid">
-        <section className="card stack">
-          <span className="badge">Onboarding Console</span>
-          <h1>From scientific question to operational experiment plan.</h1>
-          <p className="lead">
-            Enter a hypothesis. BenchPlan checks literature, retrieves related protocols, and drafts a lab-ready plan with materials, budget, timeline, validation, and citations.
+    <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-8">
+      <div className="pointer-events-none absolute inset-x-0 top-[-240px] h-[560px] bg-[radial-gradient(circle_at_top,rgba(99,221,255,0.18),transparent_68%)]" />
+      <main className="relative mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-5xl flex-col items-center justify-center gap-8 text-center">
+        <div className="space-y-4 animate-fade-in-up">
+          <Badge variant="primary" className="mx-auto">
+            <Sparkles size={12} className="mr-1.5" />
+            BenchPlan AI
+          </Badge>
+          <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">How can I help design your next experiment?</h1>
+          <p className="mx-auto max-w-2xl text-balance text-sm text-muted-foreground sm:text-base">
+            Enter a hypothesis, and BenchPlan will run literature quality checks, identify novelty signals, and draft a structured experiment plan with references, budget, and timeline.
           </p>
-          <div className="metadata-strip">
-            <span className="mono">API status: {healthQuery.data?.status ?? "checking..."}</span>
-            <span className="mono">{"Workflow: input -> QC -> plan -> review"}</span>
-          </div>
-          <SampleHypothesisChips onSelect={(value) => createProject.mutate(value)} />
-        </section>
-        <HypothesisInput
-          onSubmit={async (hypothesis) => {
-            await createProject.mutateAsync(hypothesis)
-          }}
-        />
-      </div>
-      {createProject.error ? <p className="error">{(createProject.error as Error).message}</p> : null}
-      <section className="how-strip">
-        <article>
-          <strong>1. Input</strong>
-          <p>Natural-language hypothesis and constraints</p>
-        </article>
-        <article>
-          <strong>2. Literature QC</strong>
-          <p>Novelty signal with traceable references</p>
-        </article>
-        <article>
-          <strong>3. Plan + Review</strong>
-          <p>Operational plan with scientist corrections</p>
-        </article>
-      </section>
+        </div>
+
+        <div className="w-full max-w-3xl animate-fade-in-up [animation-delay:100ms]">
+          <HypothesisInput
+            onSubmit={async (hypothesis) => {
+              await createProject.mutateAsync(hypothesis)
+            }}
+          />
+          <SampleHypothesisChips className="mt-5" onSelect={(value) => createProject.mutate(value)} />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground animate-fade-in-up [animation-delay:180ms]">
+          <Badge className="normal-case tracking-wide" variant="default">
+            <Activity size={12} className="mr-1.5" /> API {healthQuery.data?.status ?? "checking"}
+          </Badge>
+          <Badge className="normal-case tracking-wide" variant="default">
+            Pipeline: Input / QC / Plan / Review
+          </Badge>
+        </div>
+
+        {createProject.error ? <p className="text-sm text-destructive">{(createProject.error as Error).message}</p> : null}
+      </main>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 mx-auto h-40 max-w-5xl bg-gradient-to-t from-background to-transparent" />
     </div>
   )
 }

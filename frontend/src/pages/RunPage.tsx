@@ -4,6 +4,8 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { z } from "zod"
 
 import { LiteratureQcCard } from "@/components/scientist/LiteratureQcCard"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { AgentRunSchema, LiteratureQcRunSchema } from "@/lib/schemas"
 
@@ -44,33 +46,39 @@ export function RunPage() {
   }, [navigate, runQuery.data])
 
   return (
-    <div className="stack">
-      <h2>Live run</h2>
+    <div className="space-y-4">
+      <h2 className="text-3xl font-semibold tracking-tight">Live run</h2>
       {runQuery.data ? (
-        <section className="card">
-          <h3>Status</h3>
-          <div className="metadata-strip">
-            <span className="mono">Run state: {runQuery.data.status}</span>
-            <span className="mono">Events: {(runQuery.data.events ?? []).length}</span>
-          </div>
-          <div className="timeline-log">
+        <Card className="rounded-2xl border-border/70">
+          <CardHeader className="space-y-2">
+            <CardTitle>Status</CardTitle>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-mono">Run state: {runQuery.data.status}</span>
+              <span className="font-mono">Events: {(runQuery.data.events ?? []).length}</span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="mask-fade-bottom max-h-64 space-y-2 overflow-auto rounded-xl border border-border/70 bg-background/50 p-3">
             {(runQuery.data.events ?? []).map((event) => (
-              <p key={event.id}>{event.created_at} • {event.label}</p>
+              <p key={event.id} className="font-mono text-xs text-muted-foreground">
+                {event.created_at} - {event.label}
+              </p>
             ))}
-          </div>
-        </section>
+            </div>
+          </CardContent>
+        </Card>
       ) : null}
 
       {qcQuery.data ? <LiteratureQcCard run={qcQuery.data} /> : null}
 
       {qcQuery.data?.status === "completed" ? (
-        <button onClick={() => generatePlan.mutate()} disabled={generatePlan.isPending}>
+        <Button onClick={() => generatePlan.mutate()} disabled={generatePlan.isPending}>
           {generatePlan.isPending ? "Generating..." : "Generate Experiment Plan"}
-        </button>
+        </Button>
       ) : null}
 
-      {runQuery.error ? <p className="error">{(runQuery.error as Error).message}</p> : null}
-      {qcQuery.error ? <p className="error">{(qcQuery.error as Error).message}</p> : null}
+      {runQuery.error ? <p className="text-sm text-destructive">{(runQuery.error as Error).message}</p> : null}
+      {qcQuery.error ? <p className="text-sm text-destructive">{(qcQuery.error as Error).message}</p> : null}
     </div>
   )
 }

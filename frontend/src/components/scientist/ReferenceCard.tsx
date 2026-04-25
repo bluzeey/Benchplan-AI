@@ -1,27 +1,32 @@
 import { z } from "zod"
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ReferenceSchema } from "@/lib/schemas"
 
 type Reference = z.infer<typeof ReferenceSchema>
 
 export function ReferenceCard({ reference }: { reference: Reference }) {
   return (
-    <article className="card compact">
-      <h4>{reference.title}</h4>
-      <p className="muted">
-        Source: {reference.source} {reference.year ? `• ${reference.year}` : ""}
-      </p>
-      {reference.why_relevant && <p>{reference.why_relevant}</p>}
-      <div className="metadata-strip">
-        {reference.doi ? <span className="mono">DOI: {reference.doi}</span> : <span className="mono">DOI unavailable</span>}
-        {reference.url ? (
-          <a href={reference.url} target="_blank" rel="noreferrer" className="mono">
-            open source
-          </a>
-        ) : (
-          <span className="mono">No external link</span>
-        )}
-      </div>
-    </article>
+    <Card className="h-full rounded-xl border-border/70">
+      <CardHeader className="space-y-2 p-4 pb-0">
+        <CardTitle className="text-base leading-snug">{reference.title}</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Source: {reference.source} {reference.year ? `- ${reference.year}` : ""}
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3 p-4">
+        {reference.why_relevant && <p className="text-sm text-muted-foreground">{reference.why_relevant}</p>}
+        <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3 text-xs font-mono text-muted-foreground">
+          <span>{reference.doi ? `DOI: ${reference.doi}` : "DOI unavailable"}</span>
+          {reference.url ? (
+            <a href={reference.url} target="_blank" rel="noreferrer" className="text-primary transition-colors hover:text-primary/80">
+              open source
+            </a>
+          ) : (
+            <span>No external link</span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

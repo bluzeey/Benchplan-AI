@@ -2,6 +2,7 @@ import { ColumnDef, flexRender, getCoreRowModel, getSortedRowModel, useReactTabl
 import { useMemo, useState } from "react"
 import { z } from "zod"
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MaterialSchema } from "@/lib/schemas"
 
 type Material = z.infer<typeof MaterialSchema>
@@ -34,15 +35,22 @@ export function MaterialsTable({ materials }: { materials: Material[] }) {
   })
 
   return (
-    <div className="card">
-      <h3>Materials</h3>
-      <div className="table-wrap">
-        <table>
+    <Card className="rounded-2xl border-border/70">
+      <CardHeader className="pb-2">
+        <CardTitle>Materials</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="overflow-x-auto rounded-xl border border-border/70">
+          <table className="min-w-[760px] w-full border-collapse text-sm">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <th key={header.id} onClick={header.column.getToggleSortingHandler()}>
+                  <th
+                    key={header.id}
+                    onClick={header.column.getToggleSortingHandler()}
+                    className="cursor-pointer border-b border-border/70 bg-accent/70 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-muted-foreground"
+                  >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
                 ))}
@@ -51,19 +59,22 @@ export function MaterialsTable({ materials }: { materials: Material[] }) {
           </thead>
           <tbody>
             {table.getRowModel().rows.map((row) => (
-              <tr key={row.id}>
+              <tr key={row.id} className="odd:bg-background/20 even:bg-card/20 hover:bg-primary/5">
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id}>{cell.column.columnDef.cell ? flexRender(cell.column.columnDef.cell, cell.getContext()) : String(cell.getValue() ?? "")}</td>
+                  <td key={cell.id} className="border-b border-border/60 px-3 py-2 align-top text-xs text-muted-foreground">
+                    {cell.column.columnDef.cell ? flexRender(cell.column.columnDef.cell, cell.getContext()) : String(cell.getValue() ?? "")}
+                  </td>
                 ))}
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
-      <div className="metadata-strip">
-        <span className="mono">Rows: {materials.length}</span>
-        <span>Verification field marks supplier confidence</span>
-      </div>
-    </div>
+          </table>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3 text-xs text-muted-foreground">
+          <span className="font-mono">Rows: {materials.length}</span>
+          <span>Verification field marks supplier confidence</span>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

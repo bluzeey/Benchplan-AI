@@ -1,5 +1,9 @@
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+
 type Props = {
   onSelect: (value: string) => void
+  className?: string
 }
 
 const samples = [
@@ -9,13 +13,21 @@ const samples = [
   "Sporomusa ovata in a bioelectrochemical reactor will increase acetate production rate from CO2 by at least 15% under controlled cathode potential.",
 ]
 
-export function SampleHypothesisChips({ onSelect }: Props) {
+export function SampleHypothesisChips({ onSelect, className }: Props) {
   return (
-    <div className="chips">
+    <div className={cn("flex flex-wrap items-center justify-center gap-2", className)}>
       {samples.map((sample, index) => (
-        <button key={sample} type="button" className="chip" onClick={() => onSelect(sample)}>
-          S-{String(index + 1).padStart(2, "0")} • {sample.slice(0, 88)}...
-        </button>
+        <Button
+          key={sample}
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 max-w-full rounded-full border-primary/20 bg-card/70 px-4 normal-case tracking-normal text-muted-foreground hover:border-primary/40 hover:text-foreground"
+          onClick={() => onSelect(sample)}
+        >
+          <span className="mr-2 text-[10px] uppercase tracking-[0.12em] text-primary/80">S-{String(index + 1).padStart(2, "0")}</span>
+          <span className="max-w-[280px] truncate text-left">{sample}</span>
+        </Button>
       ))}
     </div>
   )

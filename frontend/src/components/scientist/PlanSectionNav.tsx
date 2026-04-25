@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 type Section = {
   id: string
   title: string
@@ -5,17 +8,21 @@ type Section = {
 
 export function PlanSectionNav({ sections }: { sections: Section[] }) {
   return (
-    <aside className="card sticky">
-      <h4>Sections</h4>
-      <p className="muted">Jump to generated modules</p>
-      <div className="column">
-        {sections.length === 0 ? <p className="muted mono">No structured sections found</p> : null}
+    <Card className="sticky top-24 hidden h-fit rounded-2xl lg:block">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Sections</CardTitle>
+        <p className="text-sm text-muted-foreground">Jump to generated modules</p>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {sections.length === 0 ? <p className="font-mono text-xs text-muted-foreground">No structured sections found</p> : null}
         {sections.map((section, index) => (
-          <a key={section.id} href={`#section-${section.id}`} className="button-link">
-            {String(index + 1).padStart(2, "0")} • {section.title}
-          </a>
+          <Button key={section.id} asChild variant="outline" className="h-auto w-full justify-start rounded-xl px-3 py-2 text-left text-xs">
+            <a href={`#section-${section.id}`}>
+              {String(index + 1).padStart(2, "0")} - {section.title}
+            </a>
+          </Button>
         ))}
-      </div>
-    </aside>
+      </CardContent>
+    </Card>
   )
 }

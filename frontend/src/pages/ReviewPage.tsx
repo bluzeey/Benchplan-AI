@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom"
 
 import { AnnotationComposer } from "@/components/scientist/AnnotationComposer"
 import { ReviewPanel } from "@/components/scientist/ReviewPanel"
+import { Button } from "@/components/ui/button"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ReviewSessionSchema } from "@/lib/schemas"
 
@@ -64,19 +65,19 @@ export function ReviewPage() {
   const review = createReview.data ?? reviewQuery.data
 
   return (
-    <div className="stack">
-      <h2>Scientist review workspace</h2>
-      <div className="metadata-strip">
-        <span className="mono">Plan: {planId ?? "n/a"}</span>
-        <span className="mono">Review: {reviewId ?? "initializing"}</span>
+    <div className="space-y-4">
+      <h2 className="text-3xl font-semibold tracking-tight">Scientist review workspace</h2>
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/60 px-3 py-2 text-xs text-muted-foreground">
+        <span className="font-mono">Plan: {planId ?? "n/a"}</span>
+        <span className="font-mono">Review: {reviewId ?? "initializing"}</span>
       </div>
-      {review ? <ReviewPanel review={review} /> : <p>Initializing review...</p>}
+      {review ? <ReviewPanel review={review} /> : <p className="text-sm text-muted-foreground">Initializing review...</p>}
       <AnnotationComposer onSubmit={(payload) => addAnnotation.mutateAsync(payload)} />
-      <button onClick={() => completeReview.mutate()} disabled={completeReview.isPending || !reviewId}>
+      <Button onClick={() => completeReview.mutate()} disabled={completeReview.isPending || !reviewId}>
         {completeReview.isPending ? "Saving..." : "Complete review"}
-      </button>
-      {createReview.error ? <p className="error">{(createReview.error as Error).message}</p> : null}
-      {addAnnotation.error ? <p className="error">{(addAnnotation.error as Error).message}</p> : null}
+      </Button>
+      {createReview.error ? <p className="text-sm text-destructive">{(createReview.error as Error).message}</p> : null}
+      {addAnnotation.error ? <p className="text-sm text-destructive">{(addAnnotation.error as Error).message}</p> : null}
     </div>
   )
 }

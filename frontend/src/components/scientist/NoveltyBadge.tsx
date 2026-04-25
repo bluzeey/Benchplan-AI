@@ -1,6 +1,8 @@
 import { LiteratureSignalSchema } from "@/lib/schemas"
 import { z } from "zod"
 
+import { Badge } from "@/components/ui/badge"
+
 type Signal = z.infer<typeof LiteratureSignalSchema>
 
 const labels: Record<Signal, string> = {
@@ -11,6 +13,16 @@ const labels: Record<Signal, string> = {
 }
 
 export function NoveltyBadge({ signal }: { signal: Signal | null | undefined }) {
-  if (!signal) return <span className="badge">Pending</span>
-  return <span className={`badge badge-${signal}`}>{labels[signal]}</span>
+  if (!signal) return <Badge variant="default">Pending</Badge>
+
+  const variant =
+    signal === "not_found"
+      ? "primary"
+      : signal === "exact_match_found"
+        ? "success"
+        : signal === "similar_work_exists"
+          ? "warning"
+          : "default"
+
+  return <Badge variant={variant}>{labels[signal]}</Badge>
 }
