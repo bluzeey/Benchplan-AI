@@ -1,69 +1,84 @@
 import { FormEvent, useState } from "react"
-import { FlaskConical, Mic, Plus, Sparkles } from "lucide-react"
+import { Paperclip, Send, ChevronDown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 type Props = {
   value?: string
   onSubmit: (hypothesis: string) => Promise<void> | void
+  isSubmitting?: boolean
   className?: string
 }
 
-export function HypothesisInput({ value = "", onSubmit, className }: Props) {
+export function HypothesisInput({
+  value = "",
+  onSubmit,
+  isSubmitting = false,
+  className,
+}: Props) {
   const [text, setText] = useState(value)
-  const [submitting, setSubmitting] = useState(false)
   const trimmedLength = text.trim().length
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (text.trim().length < 40) return
-    setSubmitting(true)
-    try {
-      await onSubmit(text)
-    } finally {
-      setSubmitting(false)
-    }
+    if (text.trim().length < 10) return
+    await onSubmit(text)
   }
 
   return (
     <form className={cn("w-full", className)} onSubmit={handleSubmit}>
-      <div className="rounded-[2rem] border border-border/80 bg-card/85 p-3 shadow-dock backdrop-blur-xl">
-        <Textarea
+      <div className="rounded-2xl border border-[hsl(217,33%,18%)] bg-[hsl(222,47%,10%)] p-4">
+        <textarea
           rows={5}
-          className="min-h-[150px] resize-none border-0 bg-transparent text-base leading-relaxed shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-          placeholder="Ask BenchPlan to evaluate your hypothesis, retrieve references, and draft a lab-ready plan..."
+          className="min-h-[140px] w-full resize-none border-0 bg-transparent text-base leading-relaxed text-white placeholder:text-[hsl(215,20%,45%)] focus:outline-none focus:ring-0"
+          placeholder="e.g. Supplementing C57BL/6 mice with Lactobacillus rhamnosus GG for 4 weeks will..."
           value={text}
           onChange={(event) => setText(event.target.value)}
         />
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/50 px-3 py-2">
-          <div className="flex items-center gap-1.5">
-            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground">
-              <Plus size={16} />
-            </Button>
-            <Button type="button" variant="ghost" size="sm" className="h-8 rounded-full px-3 text-xs text-muted-foreground">
-              <Sparkles size={14} className="mr-1.5" />
-              Extended
-            </Button>
+
+        <div className="mt-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {/* Paperclip button */}
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[hsl(215,20%,55%)] transition-colors hover:text-white"
+            >
+              <Paperclip className="h-5 w-5" />
+            </button>
+
+            {/* Deep Research dropdown */}
+            <button
+              type="button"
+              className="flex items-center gap-1.5 rounded-lg border border-[hsl(217,33%,18%)] bg-[hsl(222,47%,9%)] px-3 py-2 text-sm text-[hsl(215,20%,55%)] transition-colors hover:text-white"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                className="h-4 w-4"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+              Deep Research
+              <ChevronDown className="h-4 w-4" />
+            </button>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="hidden items-center gap-1 rounded-full border border-border/60 bg-card px-2.5 py-1 text-[11px] text-muted-foreground md:flex">
-              <FlaskConical size={12} />
-              Min 40 chars
-            </div>
-            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground">
-              <Mic size={15} />
-            </Button>
-            <Button type="submit" className="h-8 rounded-full px-4 text-xs" disabled={submitting || trimmedLength < 40}>
-              {submitting ? "Running..." : "Run QC"}
-            </Button>
-          </div>
+
+          {/* Send button */}
+          <button
+            type="submit"
+            disabled={isSubmitting || trimmedLength < 10}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(199,89%,48%)] text-white transition-all hover:bg-[hsl(199,89%,43%)] disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </button>
         </div>
-      </div>
-      <div className="mt-2 flex items-center justify-between px-2 text-xs text-muted-foreground">
-        <span className="font-mono">Chars: {trimmedLength}</span>
-        <span className="font-mono">Workflow: input -&gt; QC -&gt; plan</span>
       </div>
     </form>
   )

@@ -7,8 +7,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Manrope", "ui-sans-serif", "sans-serif"],
-        mono: ["IBM Plex Mono", "ui-monospace", "monospace"],
+        sans: ["Inter", "ui-sans-serif", "sans-serif"],
+        mono: ["ui-monospace", "monospace"],
       },
       colors: {
         background: "hsl(var(--background))",

@@ -25,11 +25,12 @@ class ExperimentQuestionSerializer(serializers.ModelSerializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     questions = ExperimentQuestionSerializer(many=True, read_only=True)
+    owner_name = serializers.CharField(source="owner.full_name", read_only=True)
 
     class Meta:
         model = Project
-        fields = ["id", "title", "domain", "owner", "questions", "created_at", "updated_at"]
-        read_only_fields = ["id", "owner", "questions", "created_at", "updated_at"]
+        fields = ["id", "title", "domain", "owner", "owner_name", "questions", "created_at", "updated_at"]
+        read_only_fields = ["id", "owner", "owner_name", "questions", "created_at", "updated_at"]
 
 
 class ProjectCreateSerializer(serializers.Serializer):

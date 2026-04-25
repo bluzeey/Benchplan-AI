@@ -1,24 +1,48 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { Activity, Sparkles } from "lucide-react"
+import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { z } from "zod"
 
 import { HypothesisInput } from "@/components/scientist/HypothesisInput"
-import { SampleHypothesisChips } from "@/components/scientist/SampleHypothesisChips"
-import { Badge } from "@/components/ui/badge"
+import { SampleHypothesisCards } from "@/components/scientist/SampleHypothesisCards"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ProjectSchema } from "@/lib/schemas"
+import { FlaskConical } from "lucide-react"
+import { Link } from "react-router-dom"
 
-const HealthSchema = z.object({ status: z.string() })
-const StartQcSchema = z.object({ qc_run_id: z.string(), agent_run_id: z.string() })
+const StartQcSchema = z.object({
+  qc_run_id: z.string(),
+  agent_run_id: z.string(),
+})
+
+const samples = [
+  {
+    title: "Paper-based CRP electrochemical biosensor",
+    hypothesis:
+      "Paper-based CRP electrochemical biosensor will improve sensitivity by at least 25% compared to colorimetric strips in diluted whole blood.",
+    icon: "teal" as const,
+  },
+  {
+    title: "LGG reduces intestinal permeability in mice",
+    hypothesis:
+      "Supplementing C57BL/6 mice with Lactobacillus rhamnosus GG for 4 weeks will reduce intestinal permeability by at least 30% compared to controls measured by FITC-dextran.",
+    icon: "green" as const,
+  },
+  {
+    title: "Trehalose cryoprotection for HeLa cells",
+    hypothesis:
+      "Trehalose cryoprotectant optimization will increase post-thaw HeLa viability by at least 20% versus DMSO-only control.",
+    icon: "purple" as const,
+  },
+  {
+    title: "Sporomusa ovata CO₂ to acetate bioelectrochemical system",
+    hypothesis:
+      "Sporomusa ovata in a bioelectrochemical reactor will increase acetate production rate from CO2 by at least 15% under controlled cathode potential.",
+    icon: "yellow" as const,
+  },
+]
 
 export function LandingPage() {
   const navigate = useNavigate()
-
-  const healthQuery = useQuery({
-    queryKey: ["health"],
-    queryFn: () => apiFetch("/api/health/", HealthSchema),
-  })
 
   const createProject = useMutation({
     mutationFn: async (hypothesis: string) => {
@@ -51,46 +75,89 @@ export function LandingPage() {
       return { project, qc }
     },
     onSuccess: (result) => {
-      navigate(`/runs/${result.qc.agent_run_id}?qcRunId=${result.qc.qc_run_id}&projectId=${result.project.id}`)
+      navigate(
+        `/runs/${result.qc.agent_run_id}?qcRunId=${result.qc.qc_run_id}&projectId=${result.project.id}`
+      )
     },
   })
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-8">
-      <div className="pointer-events-none absolute inset-x-0 top-[-240px] h-[560px] bg-[radial-gradient(circle_at_top,rgba(99,221,255,0.18),transparent_68%)]" />
-      <main className="relative mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-5xl flex-col items-center justify-center gap-8 text-center">
-        <div className="space-y-4 animate-fade-in-up">
-          <Badge variant="primary" className="mx-auto">
-            <Sparkles size={12} className="mr-1.5" />
-            BenchPlan AI
-          </Badge>
-          <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">How can I help design your next experiment?</h1>
-          <p className="mx-auto max-w-2xl text-balance text-sm text-muted-foreground sm:text-base">
-            Enter a hypothesis, and BenchPlan will run literature quality checks, identify novelty signals, and draft a structured experiment plan with references, budget, and timeline.
+    <div className="flex min-h-screen flex-col bg-[hsl(222,47%,7%)]">
+      {/* Header */}
+      <header className="flex h-16 items-center justify-between border-b border-[hsl(217,33%,18%)] px-8">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-purple-500">
+            <FlaskConical className="h-5 w-5 text-white" />
+          </div>
+          <span className="text-lg font-semibold text-white">BenchPlan AI</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/login"
+            className="text-sm font-medium text-[hsl(215,20%,55%)] transition-colors hover:text-white"
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/signup"
+            className="rounded-lg bg-[hsl(199,89%,48%)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[hsl(199,89%,43%)]"
+          >
+            Get Started
+          </Link>
+        </div>
+      </header>
+
+      {/* Main content - simple chat bar only */}
+      <main className="flex flex-1 flex-col items-center justify-center px-4">
+        <div className="mb-8 flex flex-col items-center">
+          <h1 className="text-3xl font-semibold text-white sm:text-4xl">
+            How can I help design your next experiment?
+          </h1>
+          <p className="mt-3 max-w-2xl text-center text-[hsl(215,20%,55%)]">
+            Enter a hypothesis, and BenchPlan will run literature quality checks, 
+            identify novelty signals, and draft a structured experiment plan with references, budget, and timeline.
           </p>
         </div>
 
-        <div className="w-full max-w-3xl animate-fade-in-up [animation-delay:100ms]">
+        <div className="w-full max-w-3xl">
           <HypothesisInput
             onSubmit={async (hypothesis) => {
               await createProject.mutateAsync(hypothesis)
             }}
+            isSubmitting={createProject.isPending}
           />
-          <SampleHypothesisChips className="mt-5" onSelect={(value) => createProject.mutate(value)} />
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground animate-fade-in-up [animation-delay:180ms]">
-          <Badge className="normal-case tracking-wide" variant="default">
-            <Activity size={12} className="mr-1.5" /> API {healthQuery.data?.status ?? "checking"}
-          </Badge>
-          <Badge className="normal-case tracking-wide" variant="default">
-            Pipeline: Input / QC / Plan / Review
-          </Badge>
-        </div>
+        {/* Error message */}
+        {createProject.error && (
+          <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {createProject.error instanceof Error
+              ? createProject.error.message
+              : "Failed to create project"}
+          </div>
+        )}
 
-        {createProject.error ? <p className="text-sm text-destructive">{(createProject.error as Error).message}</p> : null}
+        {/* Sample hypotheses */}
+        <div className="mt-8 w-full max-w-5xl">
+          <p className="mb-4 text-center text-sm text-[hsl(215,20%,55%)]">
+            Try a sample hypothesis
+          </p>
+          <SampleHypothesisCards
+            samples={samples}
+            onSelect={(hypothesis) => createProject.mutate(hypothesis)}
+          />
+        </div>
       </main>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 mx-auto h-40 max-w-5xl bg-gradient-to-t from-background to-transparent" />
+
+      {/* Footer */}
+      <footer className="border-t border-[hsl(217,33%,18%)] px-8 py-4">
+        <div className="flex items-center justify-center gap-2 text-xs text-[hsl(215,20%,45%)]">
+          <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
+          <span>API Online</span>
+          <span className="mx-2">•</span>
+          <span>Pipeline: Input / QC / Plan / Review</span>
+        </div>
+      </footer>
     </div>
   )
 }

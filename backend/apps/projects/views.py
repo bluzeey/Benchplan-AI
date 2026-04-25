@@ -6,7 +6,10 @@ from .serializers import ExperimentQuestionSerializer, ProjectCreateSerializer, 
 
 
 class ProjectViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
-    queryset = Project.objects.all().order_by("-created_at")
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Project.objects.filter(owner=self.request.user).order_by("-created_at")
+        return Project.objects.none()
 
     def get_serializer_class(self):
         if self.action == "create":

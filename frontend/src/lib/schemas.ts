@@ -1,5 +1,38 @@
 import { z } from "zod"
 
+// Auth Schemas
+export const UserSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  first_name: z.string(),
+  last_name: z.string(),
+  full_name: z.string(),
+})
+
+export type User = z.infer<typeof UserSchema>
+
+export const SignupRequestSchema = z.object({
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  password_confirm: z.string(),
+}).refine((data) => data.password === data.password_confirm, {
+  message: "Passwords do not match",
+  path: ["password_confirm"],
+})
+
+export const LoginRequestSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+})
+
+export const AuthResponseSchema = z.object({
+  user: UserSchema,
+  message: z.string(),
+})
+
+// Literature Schemas
 export const LiteratureSignalSchema = z.enum(["not_found", "similar_work_exists", "exact_match_found", "inconclusive"])
 
 export const ReferenceSchema = z.object({
