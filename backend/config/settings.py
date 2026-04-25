@@ -14,6 +14,10 @@ def env_bool(name: str, default: bool = False) -> bool:
     return value.lower() in {"1", "true", "yes", "on"}
 
 
+def env_list(name: str, default: str = "") -> list[str]:
+    return [item.strip() for item in os.getenv(name, default).split(",") if item.strip()]
+
+
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
 DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
@@ -73,7 +77,7 @@ ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
     "default": dj_database_url.parse(
-        os.getenv("DATABASE_URL", "postgres://benchplan:benchplan@localhost:5432/benchplan")
+        os.getenv("DATABASE_URL",'postgresql://postgres:root1234@localhost:5432/Benchplan')
     )
 }
 
@@ -115,18 +119,20 @@ SPECTACULAR_SETTINGS = {
 
 # CORS Configuration
 # For production, set CORS_ALLOWED_ORIGINS to your frontend URL(s)
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "CORS_ALLOWED_ORIGINS",
-        "http://localhost:5173,http://localhost:3000"
-    ).split(",")
-    if origin.strip()
-]
+CORS_ALLOW_CREDENTIALS = env_bool("CORS_ALLOW_CREDENTIALS", True)
+CORS_ALLOWED_ORIGINS = env_list(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174",
+)
+CORS_ALLOWED_ORIGIN_REGEXES = env_list(
+    "CORS_ALLOWED_ORIGIN_REGEXES",
+    r"^http://localhost:\d+$,^http://127\.0\.0\.1:\d+$",
+)
 
-# Allow all origins in debug mode
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = env_list(
+    "CSRF_TRUSTED_ORIGINS",
+    "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174",
+)
 
 # Celery Configuration
 CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
