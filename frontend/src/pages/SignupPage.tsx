@@ -4,6 +4,7 @@ import { FlaskConical, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { useAuth } from "@/app/auth-provider"
 
 export function SignupPage() {
@@ -45,17 +46,22 @@ export function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[hsl(222,47%,7%)] px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+      {/* Theme toggle */}
+      <div className="absolute right-6 top-6">
+        <ThemeToggle variant="small" />
+      </div>
+      
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500">
             <FlaskConical className="h-6 w-6 text-white" />
           </div>
-          <h2 className="mt-4 text-2xl font-semibold tracking-tight text-white">
+          <h2 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
             Create your account
           </h2>
-          <p className="mt-2 text-sm text-[hsl(215,20%,55%)]">
+          <p className="mt-2 text-sm text-muted-foreground">
             Start planning your experiments with AI
           </p>
         </div>
@@ -70,7 +76,7 @@ export function SignupPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label htmlFor="first_name" className="text-sm font-medium text-white">
+              <label htmlFor="first_name" className="text-sm font-medium text-foreground">
                 First name
               </label>
               <Input
@@ -79,13 +85,13 @@ export function SignupPage() {
                 required
                 value={formData.first_name}
                 onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                className="h-11 border-[hsl(217,33%,18%)] bg-[hsl(222,47%,9%)] text-white placeholder:text-[hsl(215,20%,45%)] focus:border-[hsl(199,89%,48%)] focus:ring-[hsl(199,89%,48%)]"
+                className="h-11 border-border bg-card text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
                 placeholder="John"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="last_name" className="text-sm font-medium text-white">
+              <label htmlFor="last_name" className="text-sm font-medium text-foreground">
                 Last name
               </label>
               <Input
@@ -94,14 +100,14 @@ export function SignupPage() {
                 required
                 value={formData.last_name}
                 onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                className="h-11 border-[hsl(217,33%,18%)] bg-[hsl(222,47%,9%)] text-white placeholder:text-[hsl(215,20%,45%)] focus:border-[hsl(199,89%,48%)] focus:ring-[hsl(199,89%,48%)]"
+                className="h-11 border-border bg-card text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
                 placeholder="Doe"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-white">
+            <label htmlFor="email" className="text-sm font-medium text-foreground">
               Email address
             </label>
             <Input
@@ -110,13 +116,13 @@ export function SignupPage() {
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="h-11 border-[hsl(217,33%,18%)] bg-[hsl(222,47%,9%)] text-white placeholder:text-[hsl(215,20%,45%)] focus:border-[hsl(199,89%,48%)] focus:ring-[hsl(199,89%,48%)]"
+              className="h-11 border-border bg-card text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
               placeholder="you@example.com"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-white">
+            <label htmlFor="password" className="text-sm font-medium text-foreground">
               Password
             </label>
             <Input
@@ -126,13 +132,13 @@ export function SignupPage() {
               minLength={8}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="h-11 border-[hsl(217,33%,18%)] bg-[hsl(222,47%,9%)] text-white placeholder:text-[hsl(215,20%,45%)] focus:border-[hsl(199,89%,48%)] focus:ring-[hsl(199,89%,48%)]"
+              className="h-11 border-border bg-card text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
               placeholder="Minimum 8 characters"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password_confirm" className="text-sm font-medium text-white">
+            <label htmlFor="password_confirm" className="text-sm font-medium text-foreground">
               Confirm password
             </label>
             <Input
@@ -141,7 +147,7 @@ export function SignupPage() {
               required
               value={formData.password_confirm}
               onChange={(e) => setFormData({ ...formData, password_confirm: e.target.value })}
-              className="h-11 border-[hsl(217,33%,18%)] bg-[hsl(222,47%,9%)] text-white placeholder:text-[hsl(215,20%,45%)] focus:border-[hsl(199,89%,48%)] focus:ring-[hsl(199,89%,48%)]"
+              className="h-11 border-border bg-card text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
               placeholder="Re-enter password"
             />
           </div>
@@ -149,7 +155,7 @@ export function SignupPage() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="h-11 w-full bg-[hsl(199,89%,48%)] font-medium text-white hover:bg-[hsl(199,89%,43%)] disabled:opacity-50"
+            className="h-11 w-full bg-primary font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {isLoading ? (
               <>
@@ -161,9 +167,9 @@ export function SignupPage() {
             )}
           </Button>
 
-          <p className="text-center text-sm text-[hsl(215,20%,55%)]">
+          <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="font-medium text-[hsl(199,89%,48%)] hover:text-[hsl(199,89%,60%)]">
+            <Link to="/login" className="font-medium text-primary hover:opacity-80">
               Sign in
             </Link>
           </p>

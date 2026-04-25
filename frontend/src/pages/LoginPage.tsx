@@ -92,6 +92,7 @@ export function LoginPage() {
             type="submit"
             disabled={isLoading}
             className="h-11 w-full bg-primary font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
