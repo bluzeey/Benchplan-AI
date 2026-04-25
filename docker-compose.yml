@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: benchplan
       POSTGRES_PASSWORD: benchplan
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -20,6 +20,7 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/app
+      - /app/staticfiles
     ports:
       - "8000:8000"
     depends_on:
@@ -27,6 +28,9 @@ services:
       - redis
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=postgres://benchplan:benchplan@postgres:5432/benchplan
+      - REDIS_URL=redis://redis:6379/0
 
   worker:
     build: ./backend
@@ -39,6 +43,9 @@ services:
       - postgres
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=postgres://benchplan:benchplan@postgres:5432/benchplan
+      - REDIS_URL=redis://redis:6379/0
 
   frontend:
     build: ./frontend
