@@ -3,9 +3,9 @@ set -e
 
 echo "=== Step 1: Resetting database ==="
 python -c "
-import psycopg2
+import psycopg
 import os
-conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+conn = psycopg.connect(os.getenv('DATABASE_URL'))
 cur = conn.cursor()
 cur.execute('DROP SCHEMA IF EXISTS public CASCADE;')
 cur.execute('CREATE SCHEMA public;')
