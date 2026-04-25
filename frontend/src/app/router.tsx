@@ -37,19 +37,13 @@ function ProtectedLayout() {
   )
 }
 
-// Public only layout - redirects to dashboard if logged in
+// Public only layout - renders immediately, redirects if already logged in
 function PublicOnlyLayout() {
   const { isAuthenticated, isLoading } = useAuth()
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[hsl(222,47%,7%)]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[hsl(199,89%,48%)] border-t-transparent" />
-      </div>
-    )
-  }
-
-  if (isAuthenticated) {
+  // Only redirect if we're sure the user is authenticated (not during initial loading)
+  // This lets public pages render immediately without waiting for auth check
+  if (!isLoading && isAuthenticated) {
     return <Navigate to="/dashboard" replace />
   }
 

@@ -1,10 +1,6 @@
-import { z } from "zod"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { fmtCurrency } from "@/lib/format"
-import { BudgetLineSchema } from "@/lib/schemas"
-
-type BudgetLine = z.infer<typeof BudgetLineSchema>
+import type { BudgetLine } from "@/lib/schemas"
 
 export function BudgetTable({ lines }: { lines: BudgetLine[] }) {
   return (

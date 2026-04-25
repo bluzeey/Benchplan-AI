@@ -1,9 +1,5 @@
-import { z } from "zod"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TimelinePhaseSchema } from "@/lib/schemas"
-
-type TimelinePhase = z.infer<typeof TimelinePhaseSchema>
+import type { TimelinePhase } from "@/lib/schemas"
 
 export function TimelineView({ phases }: { phases: TimelinePhase[] }) {
   return (

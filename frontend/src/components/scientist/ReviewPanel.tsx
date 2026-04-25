@@ -1,16 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { ReviewSession } from "@/lib/schemas"
 
-type ReviewSession = {
-  status: string
-  annotations?: Array<{
-    id: string
-    correction_type: string
-    corrected_text: string
-    rationale: string
-  }>
-}
-
-export function ReviewPanel({ review }: { review: ReviewSession }) {
+export function ReviewPanel({ review }: { review: { status: string; annotations?: ReviewSession["annotations"] } }) {
   return (
     <Card className="rounded-2xl border-border/70">
       <CardHeader className="space-y-3">

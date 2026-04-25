@@ -20,6 +20,9 @@ export function SignupPage() {
     password_confirm: "",
   })
 
+  const displayError = error || formError
+  const isDuplicateEmailError = displayError?.toLowerCase().includes("already exists")
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError(null)
@@ -68,9 +71,21 @@ export function SignupPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          {(error || formError) && (
+          {displayError && (
             <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-              {error || formError}
+              {isDuplicateEmailError ? (
+                <div className="flex flex-col gap-2">
+                  <span>{displayError}</span>
+                  <Link
+                    to="/login"
+                    className="font-medium text-red-400 underline underline-offset-2 hover:text-red-300"
+                  >
+                    Go to login
+                  </Link>
+                </div>
+              ) : (
+                displayError
+              )}
             </div>
           )}
 

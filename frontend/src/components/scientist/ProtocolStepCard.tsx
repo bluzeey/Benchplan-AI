@@ -1,9 +1,5 @@
-import { z } from "zod"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ProtocolStepSchema } from "@/lib/schemas"
-
-type ProtocolStep = z.infer<typeof ProtocolStepSchema>
+import type { ProtocolStep } from "@/lib/schemas"
 
 export function ProtocolStepCard({ step }: { step: ProtocolStep }) {
   return (

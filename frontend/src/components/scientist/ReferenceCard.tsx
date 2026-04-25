@@ -1,9 +1,5 @@
-import { z } from "zod"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ReferenceSchema } from "@/lib/schemas"
-
-type Reference = z.infer<typeof ReferenceSchema>
+import type { Reference } from "@/lib/schemas"
 
 export function ReferenceCard({ reference }: { reference: Reference }) {
   return (

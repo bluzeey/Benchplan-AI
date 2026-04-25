@@ -1,12 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { PlanSection } from "@/lib/schemas"
 
-type Section = {
-  id: string
-  title: string
-}
-
-export function PlanSectionNav({ sections }: { sections: Section[] }) {
+export function PlanSectionNav({ sections }: { sections: Pick<PlanSection, "id" | "title">[] }) {
   return (
     <Card className="sticky top-24 hidden h-fit rounded-2xl lg:block">
       <CardHeader className="pb-3">

@@ -1,8 +1,11 @@
 import { z } from "zod"
 
+// Shared ID schema - backend always returns UUIDs as strings
+export const IdSchema = z.string()
+
 // Auth Schemas
 export const UserSchema = z.object({
-  id: z.union([z.string(), z.number()]).transform((val) => String(val)),
+  id: IdSchema,
   email: z.string(),
   first_name: z.string(),
   last_name: z.string(),
@@ -36,7 +39,7 @@ export const AuthResponseSchema = z.object({
 export const LiteratureSignalSchema = z.enum(["not_found", "similar_work_exists", "exact_match_found", "inconclusive"])
 
 export const ReferenceSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   title: z.string(),
   source: z.string(),
   year: z.number().nullable(),
@@ -48,7 +51,7 @@ export const ReferenceSchema = z.object({
 })
 
 export const LiteratureQcRunSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   status: z.string(),
   novelty_signal: LiteratureSignalSchema.nullable(),
   confidence: z.union([z.number(), z.string()]).nullable(),
@@ -58,28 +61,30 @@ export const LiteratureQcRunSchema = z.object({
 })
 
 export const QuestionSchema = z.object({
-  id: z.string(),
-  project: z.string(),
+  id: IdSchema,
+  project: IdSchema,
   raw_text: z.string(),
   parsed_json: z.record(z.string(), z.any()).default({}),
 })
 
 export const ProjectSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   title: z.string(),
   domain: z.string().nullable().optional(),
   questions: z.array(QuestionSchema).default([]),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
 })
 
 export const AgentEventSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   label: z.string(),
   payload: z.record(z.string(), z.any()),
   created_at: z.string(),
 })
 
 export const AgentRunSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   run_type: z.string(),
   status: z.string(),
   input_payload: z.record(z.string(), z.any()),
@@ -89,7 +94,7 @@ export const AgentRunSchema = z.object({
 })
 
 export const PlanSectionSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   key: z.string(),
   title: z.string(),
   order: z.number(),
@@ -99,7 +104,7 @@ export const PlanSectionSchema = z.object({
 })
 
 export const ProtocolStepSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   step_number: z.number(),
   title: z.string(),
   description: z.string(),
@@ -112,7 +117,7 @@ export const ProtocolStepSchema = z.object({
 })
 
 export const ExperimentPlanSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   title: z.string(),
   status: z.string(),
   executive_summary: z.string(),
@@ -127,7 +132,7 @@ export const ExperimentPlanSchema = z.object({
 })
 
 export const MaterialSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   name: z.string(),
   category: z.string(),
   role: z.string().optional(),
@@ -143,7 +148,7 @@ export const MaterialSchema = z.object({
 })
 
 export const BudgetLineSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   category: z.string(),
   label: z.string(),
   quantity: z.union([z.number(), z.string()]).nullable(),
@@ -153,7 +158,7 @@ export const BudgetLineSchema = z.object({
 })
 
 export const TimelinePhaseSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   phase_number: z.number(),
   title: z.string(),
   start_week: z.number(),
@@ -165,7 +170,7 @@ export const TimelinePhaseSchema = z.object({
 })
 
 export const ReviewAnnotationSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   section_key: z.string(),
   correction_type: z.string(),
   original_text: z.string(),
@@ -176,15 +181,31 @@ export const ReviewAnnotationSchema = z.object({
 })
 
 export const ReviewSessionSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   status: z.string(),
   overall_rating: z.number().nullable(),
   annotations: z.array(ReviewAnnotationSchema).default([]),
 })
 
 export const FeedbackExampleSchema = z.object({
-  id: z.string(),
+  id: IdSchema,
   domain: z.string(),
   experiment_type: z.string(),
   lesson: z.string(),
 })
+
+// Export output types (after transforms) for use in components
+export type PlanSection = z.output<typeof PlanSectionSchema>
+export type ProtocolStep = z.output<typeof ProtocolStepSchema>
+export type Material = z.output<typeof MaterialSchema>
+export type BudgetLine = z.output<typeof BudgetLineSchema>
+export type TimelinePhase = z.output<typeof TimelinePhaseSchema>
+export type ReviewAnnotation = z.output<typeof ReviewAnnotationSchema>
+export type Reference = z.output<typeof ReferenceSchema>
+// ReviewSession and LiteratureQcRun have default([]) for arrays, so make them required in the types
+type _ReviewSession = z.output<typeof ReviewSessionSchema>
+export type ReviewSession = Omit<_ReviewSession, "annotations"> & { annotations: ReviewAnnotation[] }
+type _LiteratureQcRun = z.output<typeof LiteratureQcRunSchema>
+export type LiteratureQcRun = Omit<_LiteratureQcRun, "references"> & { references: Reference[] }
+export type Question = z.output<typeof QuestionSchema>
+export type Project = z.output<typeof ProjectSchema>

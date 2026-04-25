@@ -20,6 +20,11 @@ class SignupSerializer(serializers.ModelSerializer):
         model = User
         fields = ["email", "first_name", "last_name", "password", "password_confirm"]
     
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("An account with this email already exists. Please sign in instead.")
+        return value
+
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError({"password_confirm": "Passwords do not match."})

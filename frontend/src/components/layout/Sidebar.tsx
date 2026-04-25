@@ -23,15 +23,8 @@ import { useQuery } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
 import { apiFetch } from "@/lib/api"
 import { useAuth } from "@/app/auth-provider"
+import { ProjectSchema } from "@/lib/schemas"
 import { z } from "zod"
-
-const ProjectSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  domain: z.string().nullable(),
-  created_at: z.string(),
-  updated_at: z.string(),
-})
 
 const ProjectsListSchema = z.array(ProjectSchema)
 
@@ -197,7 +190,7 @@ export function Sidebar() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-white">{project.title}</p>
                       <p className="text-xs text-[hsl(215,20%,45%)]">
-                        {project.domain || "Other"} • {formatRelativeTime(project.updated_at)}
+                        {project.domain || "Other"} • {project.updated_at ? formatRelativeTime(project.updated_at) : "recent"}
                       </p>
                     </div>
                   </button>

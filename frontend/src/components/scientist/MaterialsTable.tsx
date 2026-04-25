@@ -1,11 +1,8 @@
 import { ColumnDef, flexRender, getCoreRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table"
 import { useMemo, useState } from "react"
-import { z } from "zod"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MaterialSchema } from "@/lib/schemas"
-
-type Material = z.infer<typeof MaterialSchema>
+import type { Material } from "@/lib/schemas"
 
 const columns: Array<ColumnDef<Material>> = [
   { accessorKey: "name", header: "Item" },

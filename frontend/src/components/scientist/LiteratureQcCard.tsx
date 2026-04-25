@@ -1,28 +1,12 @@
 import { fmtConfidence } from "@/lib/format"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { LiteratureQcRun } from "@/lib/schemas"
 
 import { NoveltyBadge } from "./NoveltyBadge"
 import { ReferenceCard } from "./ReferenceCard"
 
-type Run = {
-  novelty_signal: "not_found" | "similar_work_exists" | "exact_match_found" | "inconclusive" | null
-  confidence: number | string | null
-  summary: string | null
-  references?: Array<{
-    id: string
-    title: string
-    source: string
-    year: number | null
-    doi?: string | null
-    url?: string | null
-    relevance_score?: number | string | null
-    why_relevant?: string
-    match_json?: Record<string, string>
-  }>
-}
-
-export function LiteratureQcCard({ run }: { run: Run }) {
+export function LiteratureQcCard({ run }: { run: Omit<LiteratureQcRun, "references"> & { references?: LiteratureQcRun["references"] } }) {
   const confidence = run.confidence == null ? null : Number(run.confidence)
 
   return (
