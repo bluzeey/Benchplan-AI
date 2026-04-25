@@ -36,10 +36,15 @@ export function ProjectPage() {
   return (
     <div className="stack">
       <h2>{project.title}</h2>
-      <p className="muted">Domain: {project.domain || "other"}</p>
+      <div className="metadata-strip">
+        <span className="mono">Domain: {project.domain || "other"}</span>
+      </div>
       <section className="card">
         <h3>Hypothesis</h3>
         <p>{project.questions?.[0]?.raw_text ?? "No hypothesis"}</p>
+        <div className="metadata-strip">
+          <span className="mono">Question count: {project.questions?.length ?? 0}</span>
+        </div>
       </section>
       <button onClick={() => startQc.mutate()} disabled={startQc.isPending}>
         {startQc.isPending ? "Starting..." : "Run Literature QC"}

@@ -56,12 +56,16 @@ export function LandingPage() {
   return (
     <div className="landing">
       <div className="hero-grid">
-        <section>
+        <section className="card stack">
+          <span className="badge">Onboarding Console</span>
           <h1>From scientific question to operational experiment plan.</h1>
-          <p>
+          <p className="lead">
             Enter a hypothesis. BenchPlan checks literature, retrieves related protocols, and drafts a lab-ready plan with materials, budget, timeline, validation, and citations.
           </p>
-          <p className="muted">API status: {healthQuery.data?.status ?? "checking..."}</p>
+          <div className="metadata-strip">
+            <span className="mono">API status: {healthQuery.data?.status ?? "checking..."}</span>
+            <span className="mono">{"Workflow: input -> QC -> plan -> review"}</span>
+          </div>
           <SampleHypothesisChips onSelect={(value) => createProject.mutate(value)} />
         </section>
         <HypothesisInput

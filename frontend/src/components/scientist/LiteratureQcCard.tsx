@@ -29,12 +29,16 @@ export function LiteratureQcCard({ run }: { run: Run }) {
         <h3>Literature QC</h3>
         <NoveltyBadge signal={run.novelty_signal} />
       </div>
-      <p>Confidence: {fmtConfidence(confidence)}</p>
-      <p>{run.summary}</p>
+      <p className="mono">Confidence: {fmtConfidence(confidence)}</p>
+      <p>{run.summary || "Pending retrieval and evidence synthesis..."}</p>
       <div className="grid two">
         {(run.references ?? []).slice(0, 3).map((reference) => (
           <ReferenceCard key={reference.id} reference={reference} />
         ))}
+      </div>
+      <div className="metadata-strip">
+        <span>Evidence channel: semantic + open retrieval</span>
+        <span className="mono">Top references: {(run.references ?? []).length}</span>
       </div>
     </section>
   )

@@ -17,23 +17,35 @@ export function PlanSummaryCards({ plan }: { plan: Plan }) {
     <div className="grid summary-grid">
       <article className="card compact">
         <p className="muted">Estimated budget</p>
-        <strong>
+        <strong className="mono">
           {fmtCurrency(min)} - {fmtCurrency(max)}
         </strong>
+        <div className="metadata-strip">
+          <span>Signal: assumption-aware</span>
+        </div>
       </article>
       <article className="card compact">
         <p className="muted">Timeline</p>
-        <strong>
+        <strong className="mono">
           {plan.estimated_duration_weeks_min} - {plan.estimated_duration_weeks_max} weeks
         </strong>
+        <div className="metadata-strip">
+          <span>Unit: calendar week</span>
+        </div>
       </article>
       <article className="card compact">
         <p className="muted">Scientist review</p>
-        <strong>{plan.scientist_review_status}</strong>
+        <strong className="mono">{plan.scientist_review_status}</strong>
+        <div className="metadata-strip">
+          <span>Source: review session</span>
+        </div>
       </article>
       <article className="card compact">
         <p className="muted">Sections</p>
-        <strong>{(plan.sections ?? []).length}</strong>
+        <strong className="mono">{(plan.sections ?? []).length}</strong>
+        <div className="metadata-strip">
+          <span>Generated modules</span>
+        </div>
       </article>
     </div>
   )

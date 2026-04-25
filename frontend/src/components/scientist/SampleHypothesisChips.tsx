@@ -12,9 +12,9 @@ const samples = [
 export function SampleHypothesisChips({ onSelect }: Props) {
   return (
     <div className="chips">
-      {samples.map((sample) => (
-        <button key={sample} className="chip" onClick={() => onSelect(sample)}>
-          {sample.slice(0, 75)}...
+      {samples.map((sample, index) => (
+        <button key={sample} type="button" className="chip" onClick={() => onSelect(sample)}>
+          S-{String(index + 1).padStart(2, "0")} • {sample.slice(0, 88)}...
         </button>
       ))}
     </div>

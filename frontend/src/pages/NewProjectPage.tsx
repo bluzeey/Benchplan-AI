@@ -53,7 +53,10 @@ export function NewProjectPage() {
 
   return (
     <div className="stack">
-      <h2>New project wizard</h2>
+      <div className="card compact">
+        <h2>New project wizard</h2>
+        <p className="muted">Define a hypothesis and constraints. BenchPlan handles literature retrieval and plan synthesis.</p>
+      </div>
       <form
         className="card"
         onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
@@ -99,6 +102,9 @@ export function NewProjectPage() {
             ))}
           </div>
         ) : null}
+        <div className="metadata-strip">
+          <span className="mono">Rule checks: control, outcome, endpoint</span>
+        </div>
         <button type="submit" disabled={mutation.isPending}>
           {mutation.isPending ? "Creating..." : "Create project"}
         </button>

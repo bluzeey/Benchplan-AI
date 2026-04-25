@@ -49,10 +49,13 @@ export function RunPage() {
       {runQuery.data ? (
         <section className="card">
           <h3>Status</h3>
-          <p>{runQuery.data.status}</p>
+          <div className="metadata-strip">
+            <span className="mono">Run state: {runQuery.data.status}</span>
+            <span className="mono">Events: {(runQuery.data.events ?? []).length}</span>
+          </div>
           <div className="timeline-log">
             {(runQuery.data.events ?? []).map((event) => (
-              <p key={event.id}>{event.label}</p>
+              <p key={event.id}>{event.created_at} • {event.label}</p>
             ))}
           </div>
         </section>

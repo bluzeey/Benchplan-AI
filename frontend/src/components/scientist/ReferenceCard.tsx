@@ -12,9 +12,16 @@ export function ReferenceCard({ reference }: { reference: Reference }) {
         Source: {reference.source} {reference.year ? `• ${reference.year}` : ""}
       </p>
       {reference.why_relevant && <p>{reference.why_relevant}</p>}
-      <p className="muted">
-        {reference.doi ? `DOI: ${reference.doi}` : ""} {reference.url ? ` ${reference.url}` : ""}
-      </p>
+      <div className="metadata-strip">
+        {reference.doi ? <span className="mono">DOI: {reference.doi}</span> : <span className="mono">DOI unavailable</span>}
+        {reference.url ? (
+          <a href={reference.url} target="_blank" rel="noreferrer" className="mono">
+            open source
+          </a>
+        ) : (
+          <span className="mono">No external link</span>
+        )}
+      </div>
     </article>
   )
 }

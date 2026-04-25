@@ -13,6 +13,10 @@ export function ProtocolStepCard({ step }: { step: ProtocolStep }) {
       <p>{step.description}</p>
       <p className="muted">Duration: {step.duration_minutes ?? "-"} minutes</p>
       <p className="muted">Expected output: {step.expected_output}</p>
+      <div className="metadata-strip">
+        <span>Equipment: {(step.equipment ?? []).join(", ") || "not specified"}</span>
+        <span className="mono">Safety: {step.safety_notes || "review required"}</span>
+      </div>
     </article>
   )
 }

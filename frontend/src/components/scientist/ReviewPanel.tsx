@@ -12,11 +12,14 @@ export function ReviewPanel({ review }: { review: ReviewSession }) {
   return (
     <section className="card">
       <h3>Review annotations</h3>
-      <p>Status: {review.status}</p>
+      <div className="metadata-strip">
+        <span className="mono">Status: {review.status}</span>
+        <span className="mono">Annotations: {(review.annotations ?? []).length}</span>
+      </div>
       {(review.annotations ?? []).length === 0 ? <p className="muted">No annotations yet.</p> : null}
       {(review.annotations ?? []).map((annotation) => (
         <article key={annotation.id} className="card compact">
-          <strong>{annotation.correction_type}</strong>
+          <strong className="mono">{annotation.correction_type}</strong>
           <p>{annotation.corrected_text}</p>
           <p className="muted">{annotation.rationale}</p>
         </article>

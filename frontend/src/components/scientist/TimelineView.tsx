@@ -16,6 +16,7 @@ export function TimelineView({ phases }: { phases: TimelinePhase[] }) {
           <p>
             Week {phase.start_week} to {phase.end_week} • {phase.parallelizable ? "Parallelizable" : "Sequential"}
           </p>
+          <p className="muted mono">Dependencies: {phase.dependencies.length ? phase.dependencies.join(", ") : "none"}</p>
           <p className="muted">Risk: {phase.risk_of_delay} • Mitigation: {phase.mitigation}</p>
         </div>
       ))}

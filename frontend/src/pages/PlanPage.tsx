@@ -52,6 +52,10 @@ export function PlanPage() {
         <section className="card">
           <h3>Executive summary</h3>
           <p>{plan.executive_summary}</p>
+          <div className="metadata-strip">
+            <span className="mono">Plan id: {plan.id}</span>
+            <span className="mono">Status: {plan.status}</span>
+          </div>
         </section>
         <section className="card">
           <h3>Protocol</h3>
@@ -61,6 +65,21 @@ export function PlanPage() {
             ))}
           </div>
         </section>
+        {(plan.sections ?? []).length ? (
+          <section className="card stack">
+            <h3>Generated sections</h3>
+            {(plan.sections ?? []).map((section) => (
+              <article key={section.id} id={`section-${section.id}`} className="card compact">
+                <h4>{section.title}</h4>
+                <p>{section.content_markdown.slice(0, 420)}{section.content_markdown.length > 420 ? "..." : ""}</p>
+                <div className="metadata-strip">
+                  <span className="mono">Key: {section.key}</span>
+                  <span className="mono">Needs review: {section.needs_review ? "yes" : "no"}</span>
+                </div>
+              </article>
+            ))}
+          </section>
+        ) : null}
         {materialsQuery.data ? <MaterialsTable materials={materialsQuery.data} /> : null}
         {budgetQuery.data ? <BudgetTable lines={budgetQuery.data} /> : null}
         {timelineQuery.data ? <TimelineView phases={timelineQuery.data} /> : null}

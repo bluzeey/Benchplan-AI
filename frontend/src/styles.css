@@ -210,6 +210,11 @@ ul {
   gap: 20px;
 }
 
+.sidebar nav {
+  display: grid;
+  gap: 6px;
+}
+
 .brand {
   display: grid;
   gap: 6px;
@@ -273,6 +278,10 @@ ul {
 
 .topbar-title {
   gap: 10px;
+}
+
+.topbar-title .column {
+  gap: 2px;
 }
 
 .topbar-label {
@@ -586,6 +595,11 @@ tbody tr:hover {
 
 .button-link:hover {
   background: rgba(76, 215, 246, 0.11);
+}
+
+.sticky .button-link {
+  width: 100%;
+  justify-content: flex-start;
 }
 
 pre {

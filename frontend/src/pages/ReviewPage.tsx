@@ -66,6 +66,10 @@ export function ReviewPage() {
   return (
     <div className="stack">
       <h2>Scientist review workspace</h2>
+      <div className="metadata-strip">
+        <span className="mono">Plan: {planId ?? "n/a"}</span>
+        <span className="mono">Review: {reviewId ?? "initializing"}</span>
+      </div>
       {review ? <ReviewPanel review={review} /> : <p>Initializing review...</p>}
       <AnnotationComposer onSubmit={(payload) => addAnnotation.mutateAsync(payload)} />
       <button onClick={() => completeReview.mutate()} disabled={completeReview.isPending || !reviewId}>

@@ -7,6 +7,9 @@ export function ValidationPanel({ validation }: Props) {
     <div className="card">
       <h3>Validation</h3>
       <pre>{JSON.stringify(validation, null, 2)}</pre>
+      <div className="metadata-strip">
+        <span className="mono">Schema: validation-json</span>
+      </div>
     </div>
   )
 }

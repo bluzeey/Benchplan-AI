@@ -47,6 +47,7 @@ export function AnnotationComposer({ onSubmit }: Props) {
   return (
     <form className="card" onSubmit={submit}>
       <h3>Add annotation</h3>
+      <p className="muted">Capture scientist correction with rationale for auditability.</p>
       <label>
         Section
         <input value={sectionKey} onChange={(event) => setSectionKey(event.target.value)} />
@@ -64,6 +65,10 @@ export function AnnotationComposer({ onSubmit }: Props) {
       <textarea rows={3} placeholder="Original text" value={originalText} onChange={(event) => setOriginalText(event.target.value)} />
       <textarea rows={3} placeholder="Corrected text" value={correctedText} onChange={(event) => setCorrectedText(event.target.value)} />
       <textarea rows={3} placeholder="Rationale" value={rationale} onChange={(event) => setRationale(event.target.value)} />
+      <div className="metadata-strip">
+        <span className="mono">Severity: high</span>
+        <span className="mono">Tags: scientist-review</span>
+      </div>
       <button type="submit">Save annotation</button>
     </form>
   )
