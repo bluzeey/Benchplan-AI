@@ -7,6 +7,11 @@ BenchPlan AI is a research-operations MVP that turns a scientific hypothesis int
 - Backend: Django + DRF + PostgreSQL (pgvector) + Celery/Redis
 - Frontend: React + TypeScript + Vite + Tailwind
 
+## Literature source behavior
+
+- If `SEMANTIC_SCHOLAR_API_KEY` is set, Semantic Scholar is used for paper search.
+- If no Semantic Scholar key is provided (or Semantic search fails/returns empty), OpenAlex is used as fallback.
+
 ## Quick start
 
 1. Copy environment file:

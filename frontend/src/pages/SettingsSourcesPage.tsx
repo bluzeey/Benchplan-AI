@@ -22,7 +22,8 @@ export function SettingsSourcesPage() {
       <section className="card">
         <h3>External sources</h3>
         <ul>
-          <li>Semantic Scholar: configured via API key</li>
+          <li>Semantic Scholar: optional when API key is present</li>
+          <li>OpenAlex: active fallback and primary without Semantic key</li>
           <li>PubMed E-utilities: available</li>
           <li>Europe PMC: available</li>
           <li>protocols.io: stubbed in MVP</li>
