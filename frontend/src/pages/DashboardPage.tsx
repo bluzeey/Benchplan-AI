@@ -1,12 +1,11 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { FlaskConical, Sun, Moon } from "lucide-react"
 import { useMutation } from "@tanstack/react-query"
 import { z } from "zod"
 
 import { HypothesisInput } from "@/components/scientist/HypothesisInput"
 import { SampleHypothesisCards } from "@/components/scientist/SampleHypothesisCards"
-import { useTheme } from "@/app/theme-provider"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ProjectSchema } from "@/lib/schemas"
 
@@ -46,7 +45,6 @@ const samples: Sample[] = [
 
 export function DashboardPage() {
   const navigate = useNavigate()
-  const { isDark, toggleTheme } = useTheme()
   const [error, setError] = useState<string | null>(null)
 
   const createProject = useMutation({
@@ -90,19 +88,14 @@ export function DashboardPage() {
   })
 
   return (
-    <div className="relative min-h-screen bg-[hsl(222,47%,7%)]">
+    <div className="relative min-h-screen bg-background">
       {/* Top right status bar */}
       <div className="absolute right-8 top-6 flex items-center gap-3">
-        <div className="flex items-center gap-2 rounded-full border border-[hsl(217,33%,18%)] bg-[hsl(222,47%,9%)] px-3 py-1.5">
+        <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5">
           <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
-          <span className="text-sm text-white">System Nominal</span>
+          <span className="text-sm text-foreground">System Nominal</span>
         </div>
-        <button
-          onClick={toggleTheme}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-[hsl(217,33%,18%)] bg-[hsl(222,47%,9%)] text-[hsl(215,20%,55%)] transition-colors hover:text-white"
-        >
-          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </button>
+        <ThemeToggle variant="small" />
       </div>
 
       {/* Main content */}
@@ -154,10 +147,10 @@ export function DashboardPage() {
             </svg>
           </div>
 
-          <h1 className="text-3xl font-semibold text-white sm:text-4xl">
+          <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">
             What would you like to plan today?
           </h1>
-          <p className="mt-3 text-[hsl(215,20%,55%)]">
+          <p className="mt-3 text-muted-foreground">
             Enter a scientific hypothesis or question.
           </p>
         </div>
@@ -181,7 +174,7 @@ export function DashboardPage() {
 
         {/* Sample hypotheses */}
         <div className="mt-12 w-full max-w-5xl">
-          <p className="mb-4 text-center text-sm text-[hsl(215,20%,55%)]">
+          <p className="mb-4 text-center text-sm text-muted-foreground">
             Try a sample hypothesis
           </p>
           <SampleHypothesisCards

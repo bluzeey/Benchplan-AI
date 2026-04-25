@@ -77,4 +77,9 @@ export const router = createBrowserRouter([
       { path: "/settings/sources", element: <SettingsSourcesPage /> },
     ],
   },
+  // Catch-all route: redirect to home
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
+  },
 ])
