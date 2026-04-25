@@ -1,5 +1,4 @@
 from django.db import models
-from pgvector.django import VectorField
 
 from apps.common.models import UUIDModel
 
@@ -39,4 +38,3 @@ class Reference(UUIDModel):
     relevance_score = models.DecimalField(max_digits=5, decimal_places=4, null=True)
     why_relevant = models.TextField(blank=True)
     match_json = models.JSONField(default=dict)
-    embedding = VectorField(dimensions=1536, null=True)

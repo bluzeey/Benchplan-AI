@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-from pgvector.django import VectorField
 
 from apps.common.models import UUIDModel
 
@@ -36,5 +35,4 @@ class FeedbackExample(UUIDModel):
     bad_output = models.TextField()
     corrected_output = models.TextField()
     lesson = models.TextField()
-    embedding = VectorField(dimensions=1536, null=True)
     approved_for_reuse = models.BooleanField(default=False)

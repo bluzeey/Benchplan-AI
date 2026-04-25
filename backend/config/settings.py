@@ -28,7 +28,6 @@ INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
     "drf_spectacular",
-    "pgvector.django",
     "apps.common",
     "apps.accounts",
     "apps.projects",
@@ -110,3 +109,8 @@ CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", True)
 
 DEFAULT_CURRENCY = os.getenv("DEFAULT_CURRENCY", "USD")
+
+# Fireworks AI (Kimi K2.5 Turbo) Configuration
+FIREWORKS_API_KEY = os.getenv("FIREWORKS_API_KEY", "")
+FIREWORKS_BASE_URL = os.getenv("FIREWORKS_BASE_URL", "https://api.fireworks.ai/inference/v1")
+FIREWORKS_MODEL = os.getenv("FIREWORKS_MODEL", "accounts/fireworks/routers/kimi-k2p5-turbo")

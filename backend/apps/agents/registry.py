@@ -18,58 +18,48 @@ from apps.projects.models import ExperimentQuestion
 from apps.safety.models import SafetyAssessment
 from apps.safety.services import triage_hypothesis
 
+from .llm_gateway import llm_gateway
 from .models import AgentEvent, AgentRun
+from .prompts import INPUT_PARSER_PROMPT
+from .schemas import ParsedHypothesis
 
 
 def parse_hypothesis(raw_text: str) -> dict:
-    text = raw_text.lower()
-    domain = "other"
-    if any(token in text for token in ["mouse", "mice", "rat"]):
-        domain = "animal_model"
-    elif any(token in text for token in ["hela", "cell", "cells"]):
-        domain = "cell_biology"
-    elif any(token in text for token in ["biosensor", "diagnostic", "blood"]):
-        domain = "diagnostics"
+    """
+    Parse a scientific hypothesis using the LLM to extract structured information.
 
-    parsed = {
-        "domain": domain,
-        "hypothesis": raw_text,
-        "intervention": "",
-        "organism_or_model": "",
-        "comparator_or_control": "",
-        "primary_outcome": "",
-        "threshold": "",
-        "assay_or_measurement": "",
-        "duration": "",
-        "mechanism": "",
-        "required_capabilities": [],
-        "missing_information": [],
-        "safety_flags": [],
-    }
+    Uses Fireworks AI (Kimi K2.5 Turbo) to intelligently extract experiment design details
+    from free-text hypothesis.
+    """
+    try:
+        # Use LLM to parse the hypothesis with structured output
+        parsed = llm_gateway.generate_with_schema(
+            prompt=INPUT_PARSER_PROMPT,
+            payload={"hypothesis": raw_text},
+            schema=ParsedHypothesis,
+            system_message="You are an expert scientific operations parser. Extract structured information from research hypotheses accurately.",
+            temperature=0.2,  # Low temperature for deterministic extraction
+        )
+        return parsed.model_dump()
 
-    if "lactobacillus" in text or "lgg" in text:
-        parsed["intervention"] = "Lactobacillus rhamnosus GG supplementation"
-    if "c57bl/6" in text:
-        parsed["organism_or_model"] = "C57BL/6 mice"
-    if "control" in text:
-        parsed["comparator_or_control"] = "control group"
-    if "fitc" in text:
-        parsed["assay_or_measurement"] = "FITC-dextran assay"
-    if "%" in raw_text:
-        parsed["threshold"] = "effect threshold specified"
-    if "weeks" in text or "week" in text:
-        parsed["duration"] = "duration specified"
-    if "claudin" in text or "occludin" in text:
-        parsed["mechanism"] = "tight junction modulation"
-
-    if not parsed["comparator_or_control"]:
-        parsed["missing_information"].append("No explicit control/comparator")
-    if not parsed["duration"]:
-        parsed["missing_information"].append("No clear duration")
-    if not parsed["threshold"]:
-        parsed["missing_information"].append("No measurable threshold")
-
-    return parsed
+    except Exception as e:
+        # Fallback: return basic structure if LLM fails
+        print(f"LLM parsing failed, using fallback: {e}")
+        return {
+            "domain": "other",
+            "hypothesis": raw_text,
+            "intervention": "",
+            "organism_or_model": "",
+            "comparator_or_control": "",
+            "primary_outcome": "",
+            "threshold": "",
+            "assay_or_measurement": "",
+            "duration": "",
+            "mechanism": "",
+            "required_capabilities": [],
+            "missing_information": ["LLM parsing unavailable - manual review required"],
+            "safety_flags": [],
+        }
 
 
 def _add_event(agent_run: AgentRun, label: str, payload: dict | None = None) -> None:
