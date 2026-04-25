@@ -2,14 +2,19 @@ import { createBrowserRouter, Navigate, Outlet, useLocation } from "react-router
 import { useAuth } from "@/app/auth-provider"
 
 import { AppShell } from "@/components/layout/AppShell"
+import { AnalyticsPage } from "@/pages/AnalyticsPage"
 import { DashboardPage } from "@/pages/DashboardPage"
 import { LandingPage } from "@/pages/LandingPage"
 import { LoginPage } from "@/pages/LoginPage"
 import { NewProjectPage } from "@/pages/NewProjectPage"
+import { PlansPage } from "@/pages/PlansPage"
 import { PlanPage } from "@/pages/PlanPage"
+import { ProjectsPage } from "@/pages/ProjectsPage"
 import { ProjectPage } from "@/pages/ProjectPage"
+import { ReviewsPage } from "@/pages/ReviewsPage"
 import { ReviewPage } from "@/pages/ReviewPage"
 import { RunPage } from "@/pages/RunPage"
+import { SettingsPage } from "@/pages/SettingsPage"
 import { SettingsSourcesPage } from "@/pages/SettingsSourcesPage"
 import { SignupPage } from "@/pages/SignupPage"
 
@@ -63,11 +68,16 @@ export const router = createBrowserRouter([
     element: <ProtectedLayout />,
     children: [
       { path: "/dashboard", element: <DashboardPage /> },
+      { path: "/projects", element: <ProjectsPage /> },
       { path: "/projects/new", element: <NewProjectPage /> },
       { path: "/projects/:projectId", element: <ProjectPage /> },
       { path: "/runs/:runId", element: <RunPage /> },
+      { path: "/plans", element: <PlansPage /> },
       { path: "/plans/:planId", element: <PlanPage /> },
       { path: "/plans/:planId/review", element: <ReviewPage /> },
+      { path: "/reviews", element: <ReviewsPage /> },
+      { path: "/analytics", element: <AnalyticsPage /> },
+      { path: "/settings", element: <SettingsPage /> },
       { path: "/settings/sources", element: <SettingsSourcesPage /> },
     ],
   },

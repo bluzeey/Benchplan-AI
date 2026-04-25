@@ -10,10 +10,22 @@ from .models import BudgetLine, ExperimentPlan, Material, PlanSection, TimelineP
 from .serializers import (
     BudgetLineSerializer,
     ExperimentPlanSerializer,
+    ExperimentPlanListSerializer,
     MaterialSerializer,
     PlanSectionSerializer,
     TimelinePhaseSerializer,
 )
+
+
+class PlanListView(ListAPIView):
+    serializer_class = ExperimentPlanListSerializer
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return ExperimentPlan.objects.filter(
+                project__owner=self.request.user
+            ).select_related("project", "question").order_by("-created_at")
+        return ExperimentPlan.objects.none()
 
 
 class GeneratePlanView(APIView):

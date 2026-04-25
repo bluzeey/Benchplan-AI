@@ -10,6 +10,27 @@ class ReviewAnnotationSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
 
 
+class ReviewSessionListSerializer(serializers.ModelSerializer):
+    plan_title = serializers.CharField(source="plan.title", read_only=True)
+    project_title = serializers.CharField(source="plan.project.title", read_only=True)
+    annotation_count = serializers.IntegerField(source="annotations.count", read_only=True)
+
+    class Meta:
+        model = ReviewSession
+        fields = [
+            "id",
+            "plan",
+            "plan_title",
+            "project_title",
+            "status",
+            "overall_rating",
+            "annotation_count",
+            "created_at",
+            "completed_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
 class ReviewSessionSerializer(serializers.ModelSerializer):
     annotations = ReviewAnnotationSerializer(many=True, read_only=True)
 

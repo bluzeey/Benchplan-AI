@@ -5,8 +5,24 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import FeedbackExample, ReviewAnnotation, ReviewSession
-from .serializers import FeedbackExampleSerializer, ReviewAnnotationSerializer, ReviewSessionSerializer
+from .serializers import (
+    FeedbackExampleSerializer,
+    ReviewAnnotationSerializer,
+    ReviewSessionListSerializer,
+    ReviewSessionSerializer,
+)
 from .services import create_feedback_example_from_annotation
+
+
+class ReviewSessionListView(ListAPIView):
+    serializer_class = ReviewSessionListSerializer
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return ReviewSession.objects.filter(
+                reviewer=self.request.user
+            ).select_related("plan", "plan__project").order_by("-created_at")
+        return ReviewSession.objects.none()
 
 
 class CreateReviewSessionView(APIView):

@@ -4,11 +4,16 @@ import { Badge } from "@/components/ui/badge"
 
 const routeLabels: Array<{ match: RegExp; label: string }> = [
   { match: /^\/projects\/new/, label: "Project Intake" },
-  { match: /^\/projects\//, label: "Project Workspace" },
+  { match: /^\/projects\/[^/]+$/, label: "Project Workspace" },
+  { match: /^\/projects$/, label: "All Projects" },
   { match: /^\/runs\//, label: "Live Agent Run" },
   { match: /^\/plans\/.+\/review/, label: "Scientist Review" },
-  { match: /^\/plans\//, label: "Experiment Plan" },
-  { match: /^\/settings\//, label: "Sources and Safety" },
+  { match: /^\/plans\/[^/]+$/, label: "Experiment Plan" },
+  { match: /^\/plans$/, label: "All Plans" },
+  { match: /^\/reviews$/, label: "Reviews" },
+  { match: /^\/analytics$/, label: "Analytics" },
+  { match: /^\/settings\/sources/, label: "Sources and Safety" },
+  { match: /^\/settings$/, label: "Settings" },
 ]
 
 export function Topbar() {

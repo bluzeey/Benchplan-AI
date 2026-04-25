@@ -149,7 +149,10 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 px-3 py-4">
         {nav.map((item) => {
           const Icon = item.icon
-          const active = location.pathname === item.to
+          // Active if exact match or if pathname starts with item.to + "/"
+          // This ensures /projects matches /projects/new and /projects/:id
+          const active = location.pathname === item.to ||
+            (item.to !== "/" && location.pathname.startsWith(item.to + "/"))
           return (
             <Link
               key={item.label}
