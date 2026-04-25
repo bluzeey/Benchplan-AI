@@ -9,6 +9,8 @@ startCommand = "python manage.py migrate --noinput && python manage.py collectst
 healthcheckPath = "/api/health/"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+healthcheckTimeout = 120
+healthcheckInterval = 15
 
 [deploy.env]
 DJANGO_SETTINGS_MODULE = "config.settings"
