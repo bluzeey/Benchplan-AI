@@ -11,7 +11,9 @@ export function AppShell({ children }: Props) {
       <Sidebar />
       <main className="main-panel">
         <Topbar />
-        <div className="content">{children}</div>
+        <div className="content">
+          <div className="stack">{children}</div>
+        </div>
       </main>
     </div>
   )
