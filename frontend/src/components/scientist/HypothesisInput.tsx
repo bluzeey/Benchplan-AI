@@ -1,5 +1,6 @@
 import { FormEvent, useState, useRef, useEffect } from "react"
 import { Paperclip, Send, X, FileText, Image as ImageIcon, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -112,7 +113,9 @@ export function HypothesisInput({
     })
 
     if (errors.length > 0) {
-      alert(errors.join("\n"))
+      toast.error("File upload failed", {
+        description: errors.join(" | "),
+      })
     }
 
     if (newAttachments.length > 0) {
@@ -193,12 +196,19 @@ export function HypothesisInput({
               : a
           )
         )
+        toast.success("File uploaded", {
+          description: attachment.name,
+        })
       } catch (err) {
+        const message = err instanceof Error ? err.message : "Upload failed"
         console.error("Upload error:", err)
+        toast.error("Upload failed", {
+          description: message,
+        })
         setAttachments((prev) =>
           prev.map((a) =>
             a.id === attachment.id
-              ? { ...a, uploadStatus: "error", uploadError: err instanceof Error ? err.message : "Upload failed" }
+              ? { ...a, uploadStatus: "error", uploadError: message }
               : a
           )
         )

@@ -1,4 +1,5 @@
 import { ReactNode, createContext, useContext, useEffect, useState } from "react"
+import { toast } from "sonner"
 import { z } from "zod"
 import { apiFetch, apiFetchRaw, resetCsrfToken } from "@/lib/api"
 
@@ -79,9 +80,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       const user = response.user as User
       setUser(user)
+      toast.success("Welcome back!", {
+        description: `Logged in as ${user.full_name}`,
+      })
       return user
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed")
+      const message = err instanceof Error ? err.message : "Login failed"
+      setError(message)
+      toast.error("Login failed", {
+        description: message,
+      })
       throw err
     }
   }
@@ -99,9 +107,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       const user = response.user as User
       setUser(user)
+      toast.success("Account created!", {
+        description: `Welcome, ${user.full_name}`,
+      })
       return user
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Signup failed")
+      const message = err instanceof Error ? err.message : "Signup failed"
+      setError(message)
+      toast.error("Signup failed", {
+        description: message,
+      })
       throw err
     }
   }
@@ -109,6 +124,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await apiFetchRaw("/api/auth/logout/", { method: "POST" })
+      toast.success("Logged out", {
+        description: "See you next time!",
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Logout failed"
+      toast.error("Logout failed", {
+        description: message,
+      })
     } finally {
       setUser(null)
       resetCsrfToken()
