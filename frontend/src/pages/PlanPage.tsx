@@ -187,6 +187,7 @@ export function PlanPage() {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
   const isAutoScrollingRef = useRef(false)
   const autoScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const scrollSettleTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const planQuery = useQuery({
     queryKey: queryKeys.plans.detail(planId || ""),
@@ -217,48 +218,54 @@ export function PlanPage() {
     staleTime: 60_000,
   })
 
-  // Track active section on scroll - completely stable, no dependency on activeSectionId
+  // Track active section on scroll - relaxed tracking, only updates after scroll settles
   const updateActiveSection = useCallback(() => {
     // Skip if we're in the middle of a programmatic scroll
     if (isAutoScrollingRef.current) return
     if (!planQuery.data?.sections?.length || !scrollContainerRef.current) return
 
-    const container = scrollContainerRef.current
+    // Clear existing settle timeout
+    if (scrollSettleTimeoutRef.current) {
+      clearTimeout(scrollSettleTimeoutRef.current)
+    }
 
-    // Get all section elements and their positions relative to viewport
-    const sections = planQuery.data.sections.map((section) => {
-      const element = document.getElementById(`section-${section.id}`)
-      if (!element) return { id: section.id, top: Infinity }
-      const rect = element.getBoundingClientRect()
+      // Wait for scroll to settle before updating (150ms)
+    scrollSettleTimeoutRef.current = setTimeout(() => {
+      const container = scrollContainerRef.current
+      const sections = planQuery.data?.sections
+      if (!container || !sections?.length) return
+
       const containerRect = container.getBoundingClientRect()
-      return {
-        id: section.id,
-        top: rect.top - containerRect.top, // relative to container viewport
+      const containerHeight = containerRect.height
+
+      // Find which section has the most visibility in the viewport
+      let maxVisibleSection: { id: string; visibility: number } | null = null
+
+      for (const section of sections) {
+        const element = document.getElementById(`section-${section.id}`)
+        if (!element) continue
+
+        const rect = element.getBoundingClientRect()
+        const relativeTop = rect.top - containerRect.top
+        const relativeBottom = rect.bottom - containerRect.top
+
+        // Calculate visibility: how much of the section is in the viewport
+        const visibleTop = Math.max(0, relativeTop)
+        const visibleBottom = Math.min(containerHeight, relativeBottom)
+        const visibility = Math.max(0, visibleBottom - visibleTop)
+
+        if (!maxVisibleSection || visibility > maxVisibleSection.visibility) {
+          maxVisibleSection = { id: section.id, visibility }
+        }
       }
-    })
 
-    // Activation line: 80px from top of container
-    const ACTIVATION_LINE = 80
-
-    // Find the last section whose top is at or above the activation line
-    let newActiveId: string | null = null
-    for (let i = 0; i < sections.length; i++) {
-      if (sections[i].top <= ACTIVATION_LINE) {
-        newActiveId = sections[i].id
-      } else {
-        break
+      // Only update if we found a visible section with reasonable visibility
+      if (maxVisibleSection && maxVisibleSection.visibility > 50) {
+        setActiveSectionId((prev) =>
+          prev === maxVisibleSection!.id ? prev : maxVisibleSection!.id
+        )
       }
-    }
-
-    // Default to first if nothing found
-    if (!newActiveId && sections.length > 0) {
-      newActiveId = sections[0].id
-    }
-
-    // Use functional update to avoid dependency on activeSectionId
-    if (newActiveId) {
-      setActiveSectionId((prev) => (prev === newActiveId ? prev : newActiveId))
-    }
+    }, 150)
   }, [planQuery.data?.sections])
 
   // Set initial active section when data loads (only once)
@@ -277,6 +284,9 @@ export function PlanPage() {
 
     return () => {
       container.removeEventListener("scroll", updateActiveSection)
+      if (scrollSettleTimeoutRef.current) {
+        clearTimeout(scrollSettleTimeoutRef.current)
+      }
     }
   }, [updateActiveSection])
 
