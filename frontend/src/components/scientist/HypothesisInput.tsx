@@ -1,4 +1,4 @@
-import { FormEvent, useState, useRef, useCallback } from "react"
+import { FormEvent, useState, useRef, useEffect } from "react"
 import { Paperclip, Send, X, FileText, Image as ImageIcon, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -67,20 +67,16 @@ export function HypothesisInput({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const trimmedLength = text.trim().length
 
+  // Sync with external value prop (for sample hypothesis selection)
+  useEffect(() => {
+    setText(value)
+  }, [value])
+
   // Sync external value changes
   const handleTextChange = (newText: string) => {
     setText(newText)
     onChange?.(newText)
   }
-
-  // Expose method to set text from parent (for sample hypothesis click)
-  const setHypothesisText = useCallback((newText: string) => {
-    setText(newText)
-    onChange?.(newText)
-  }, [onChange])
-
-  // Make setHypothesisText available to parent via ref pattern if needed
-  // For now, we'll use controlled pattern where parent manages value
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
