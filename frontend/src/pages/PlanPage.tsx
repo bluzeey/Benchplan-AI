@@ -217,16 +217,15 @@ export function PlanPage() {
     staleTime: 60_000,
   })
 
-  // Track active section on scroll - stable logic without direction-based jumping
+  // Track active section on scroll - completely stable, no dependency on activeSectionId
   const updateActiveSection = useCallback(() => {
     // Skip if we're in the middle of a programmatic scroll
     if (isAutoScrollingRef.current) return
     if (!planQuery.data?.sections?.length || !scrollContainerRef.current) return
 
     const container = scrollContainerRef.current
-    const scrollTop = container.scrollTop
 
-    // Get all section elements and their positions relative to container
+    // Get all section elements and their positions relative to viewport
     const sections = planQuery.data.sections.map((section) => {
       const element = document.getElementById(`section-${section.id}`)
       if (!element) return { id: section.id, top: Infinity }
@@ -234,12 +233,12 @@ export function PlanPage() {
       const containerRect = container.getBoundingClientRect()
       return {
         id: section.id,
-        top: rect.top - containerRect.top, // relative to viewport
+        top: rect.top - containerRect.top, // relative to container viewport
       }
     })
 
-    // Activation line: 100px from top of viewport (stable threshold)
-    const ACTIVATION_LINE = 100
+    // Activation line: 80px from top of container
+    const ACTIVATION_LINE = 80
 
     // Find the last section whose top is at or above the activation line
     let newActiveId: string | null = null
@@ -247,40 +246,39 @@ export function PlanPage() {
       if (sections[i].top <= ACTIVATION_LINE) {
         newActiveId = sections[i].id
       } else {
-        // This section is below the line, stop here
         break
       }
     }
 
-    // Default to first section if at the very top
-    if (!newActiveId && sections.length > 0 && scrollTop < 50) {
+    // Default to first if nothing found
+    if (!newActiveId && sections.length > 0) {
       newActiveId = sections[0].id
     }
 
-    if (newActiveId && newActiveId !== activeSectionId) {
-      setActiveSectionId(newActiveId)
+    // Use functional update to avoid dependency on activeSectionId
+    if (newActiveId) {
+      setActiveSectionId((prev) => (prev === newActiveId ? prev : newActiveId))
     }
-  }, [planQuery.data?.sections, activeSectionId])
+  }, [planQuery.data?.sections])
+
+  // Set initial active section when data loads (only once)
+  useEffect(() => {
+    if (planQuery.data?.sections?.length && !activeSectionId) {
+      setActiveSectionId(planQuery.data.sections[0].id)
+    }
+  }, [planQuery.data?.sections])
 
   // Attach scroll listener
   useEffect(() => {
     const container = scrollContainerRef.current
-    if (!container || !planQuery.data?.sections?.length) return
-
-    // Set initial active section
-    setActiveSectionId(planQuery.data.sections[0].id)
+    if (!container) return
 
     container.addEventListener("scroll", updateActiveSection, { passive: true })
-    // Initial check
-    updateActiveSection()
 
     return () => {
       container.removeEventListener("scroll", updateActiveSection)
-      if (autoScrollTimeoutRef.current) {
-        clearTimeout(autoScrollTimeoutRef.current)
-      }
     }
-  }, [planQuery.data?.sections, updateActiveSection])
+  }, [updateActiveSection])
 
   const handleSectionClick = useCallback((sectionId: string) => {
     const element = document.getElementById(`section-${sectionId}`)
