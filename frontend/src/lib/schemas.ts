@@ -101,6 +101,7 @@ export const PlanSectionSchema = z.object({
   content_markdown: z.string(),
   content_json: z.record(z.string(), z.any()).default({}),
   needs_review: z.boolean(),
+  confidence: z.union([z.number(), z.string()]).nullable().optional(),
 })
 
 export const ProtocolStepSchema = z.object({

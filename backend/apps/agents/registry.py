@@ -42,6 +42,171 @@ def make_json_safe(obj: Any) -> Any:
     return obj
 
 
+def format_section_markdown(key: str, content: dict) -> str:
+    """
+    Format section content as human-readable markdown.
+    Converts structured JSON data into clean English prose.
+    """
+    lines = []
+
+    if key == "overview":
+        exec_summary = content.get("executive_summary", "")
+        if exec_summary:
+            lines.append(f"**Executive Summary:** {exec_summary}")
+        lines.append("This section provides a high-level overview of the experiment plan.")
+
+    elif key == "novelty_qc":
+        signal = content.get("signal", "unknown")
+        summary = content.get("summary", "")
+        lines.append(f"**Novelty Signal:** {signal.replace('_', ' ').title()}")
+        if summary:
+            lines.append(f"\n{summary}")
+        refs = content.get("key_references", [])
+        if refs:
+            lines.append(f"\n**Key References:** {len(refs)} sources identified")
+
+    elif key == "protocol":
+        steps = content.get("steps", [])
+        if steps:
+            lines.append(f"**Protocol Overview:** {len(steps)} step(s) defined")
+            for i, step in enumerate(steps, 1):
+                title = step.get("title", f"Step {i}")
+                desc = step.get("description", "")
+                duration = step.get("duration_minutes")
+                lines.append(f"\n**{i}. {title}**")
+                if desc:
+                    lines.append(desc)
+                if duration:
+                    hours = duration // 60
+                    mins = duration % 60
+                    if hours > 0:
+                        lines.append(f"*Duration: {hours}h {mins}m*")
+                    else:
+                        lines.append(f"*Duration: {mins} minutes*")
+
+    elif key == "materials":
+        items = content.get("items", [])
+        if items:
+            lines.append(f"**Materials List:** {len(items)} item(s) required")
+            for item in items:
+                name = item.get("name", "Unknown")
+                role = item.get("role", "")
+                qty = item.get("quantity", "")
+                cost = item.get("estimated_total_cost")
+                lines.append(f"\n- **{name}**")
+                if role:
+                    lines.append(f"  - Role: {role}")
+                if qty:
+                    lines.append(f"  - Quantity: {qty}")
+                if cost:
+                    lines.append(f"  - Est. Cost: ${cost:,.2f}")
+
+    elif key == "budget":
+        budget_lines = content.get("lines", [])
+        if budget_lines:
+            total = sum(float(line.get("total_cost", 0) or 0) for line in budget_lines)
+            lines.append(f"**Budget Summary:** ${total:,.2f} total estimated cost")
+            lines.append(f"\n**Budget Lines:**")
+            for line in budget_lines:
+                category = line.get("category", "").title()
+                label = line.get("label", "")
+                line_cost = line.get("total_cost", 0)
+                assumptions = line.get("assumptions", "")
+                lines.append(f"\n- **{category}** — {label}: ${float(line_cost or 0):,.2f}")
+                if assumptions:
+                    lines.append(f"  - *Assumptions: {assumptions}*")
+
+    elif key == "timeline":
+        phases = content.get("phases", [])
+        if phases:
+            lines.append(f"**Timeline Overview:** {len(phases)} phase(s), spanning {phases[-1].get('end_week', '?')} weeks")
+            for phase in phases:
+                title = phase.get("title", "")
+                start = phase.get("start_week", "")
+                end = phase.get("end_week", "")
+                risk = phase.get("risk_of_delay", "")
+                mitigation = phase.get("mitigation", "")
+                parallel = phase.get("parallelizable", False)
+                lines.append(f"\n- **Week {start}-{end}:** {title}")
+                if parallel:
+                    lines.append(f"  - *Can run in parallel with other phases*")
+                if risk:
+                    lines.append(f"  - Risk: {risk}")
+                if mitigation:
+                    lines.append(f"  - Mitigation: {mitigation}")
+
+    elif key == "validation":
+        primary = content.get("primary_endpoint", "")
+        secondary = content.get("secondary_endpoints", [])
+        success = content.get("success_criteria", [])
+        failure = content.get("failure_criteria", [])
+        if primary:
+            lines.append(f"**Primary Endpoint:** {primary}")
+        if secondary:
+            lines.append(f"\n**Secondary Endpoints:** {', '.join(secondary)}")
+        if success:
+            lines.append(f"\n**Success Criteria:**")
+            for c in success:
+                lines.append(f"- {c}")
+        if failure:
+            lines.append(f"\n**Failure Criteria:**")
+            for c in failure:
+                lines.append(f"- {c}")
+
+    elif key == "risks_safety":
+        risks = content.get("risks", [])
+        warning = content.get("warning", "")
+        if warning:
+            lines.append(f"> **⚠️ Safety Notice:** {warning}")
+            lines.append("")
+        if risks:
+            lines.append(f"**Risk Assessment:** {len(risks)} risk category(s) identified")
+            for risk in risks:
+                category = risk.get("category", "")
+                state = risk.get("state", "")
+                approvals = risk.get("required_approvals", [])
+                lines.append(f"\n- **{category}** — Risk Level: {state}")
+                if approvals:
+                    lines.append(f"  - Required Approvals: {', '.join(approvals)}")
+
+    elif key == "assumptions":
+        assumptions = content.get("assumptions", [])
+        if assumptions:
+            lines.append(f"**Key Assumptions:** {len(assumptions)} item(s)")
+            for assumption in assumptions:
+                lines.append(f"\n- {assumption}")
+
+    elif key == "references":
+        refs = content.get("references", [])
+        if refs:
+            lines.append(f"**Literature Sources:** {len(refs)} reference(s)")
+            for ref in refs[:5]:  # Show first 5
+                title = ref.get("title", "Untitled")
+                source = ref.get("source", "").upper()
+                year = ref.get("year", "")
+                score = ref.get("relevance_score")
+                lines.append(f"\n- **{title}**")
+                if source and year:
+                    lines.append(f"  - Source: {source}, {year}")
+                if score:
+                    lines.append(f"  - Relevance Score: {score:.0%}")
+            if len(refs) > 5:
+                lines.append(f"\n*... and {len(refs) - 5} more references*")
+
+    else:
+        # Fallback: convert dict to bullet points
+        lines.append(f"**{key.replace('_', ' ').title()}**")
+        for k, v in content.items():
+            if isinstance(v, list):
+                lines.append(f"\n- **{k.replace('_', ' ').title()}:** {len(v)} item(s)")
+            elif isinstance(v, dict):
+                lines.append(f"\n- **{k.replace('_', ' ').title()}:** See details below")
+            else:
+                lines.append(f"\n- **{k.replace('_', ' ').title()}:** {v}")
+
+    return "\n".join(lines)
+
+
 def parse_hypothesis(raw_text: str) -> dict:
     """
     Parse a scientific hypothesis using the LLM to extract structured information.
@@ -322,7 +487,9 @@ def generate_plan_from_qc(qc_run_id: str, agent_run_id: str, plan_id: str) -> Ex
     for key, title, order, content in section_specs:
         # Ensure content is JSON-safe before saving to content_json field
         safe_content = make_json_safe(content)
-        PlanSection.objects.create(plan=plan, key=key, title=title, order=order, content_json=safe_content, content_markdown=str(content), confidence=Decimal("0.65"), needs_review=True)
+        # Generate human-readable markdown instead of raw dict string
+        markdown_content = format_section_markdown(key, content)
+        PlanSection.objects.create(plan=plan, key=key, title=title, order=order, content_json=safe_content, content_markdown=markdown_content, confidence=Decimal("0.65"), needs_review=True)
 
     for step in protocol:
         ProtocolStep.objects.create(
