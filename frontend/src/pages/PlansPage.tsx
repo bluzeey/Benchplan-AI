@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { z } from "zod"
-import { FileText, Clock, DollarSign } from "lucide-react"
+import { FileText, Clock, DollarSign, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -83,6 +83,14 @@ export function PlansPage() {
   const plansQuery = useQuery({
     queryKey: ["plans-list"],
     queryFn: () => apiFetch("/api/plans/", PlansListSchema),
+    refetchInterval: (query) => {
+      // Auto-refresh if any plan is generating
+      const data = query.state.data
+      if (data && data.some((p) => p.status === "generating")) {
+        return 3000 // Refresh every 3 seconds while generating
+      }
+      return false
+    },
   })
 
   const plans = plansQuery.data ?? []
@@ -148,14 +156,21 @@ export function PlansPage() {
                   variant="default"
                   className={`${statusColors[plan.status] ?? "bg-gray-500"} text-white`}
                 >
-                  {plan.status}
+                  {plan.status === "generating" ? (
+                    <span className="inline-flex items-center gap-1">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Generating...
+                    </span>
+                  ) : plan.status}
                 </Badge>
-                <Badge
-                  variant="default"
-                  className={`${reviewStatusColors[plan.scientist_review_status] ?? "bg-gray-500"} text-white`}
-                >
-                  {plan.scientist_review_status}
-                </Badge>
+                {plan.status === "completed" && (
+                  <Badge
+                    variant="default"
+                    className={`${reviewStatusColors[plan.scientist_review_status] ?? "bg-gray-500"} text-white`}
+                  >
+                    {plan.scientist_review_status}
+                  </Badge>
+                )}
               </div>
 
               <p className="line-clamp-2 text-sm text-muted-foreground">

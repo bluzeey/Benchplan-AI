@@ -56,7 +56,6 @@ export function DashboardPage() {
         {
           method: "POST",
           body: JSON.stringify({
-            title: "BenchPlan Run",
             hypothesis,
             domain: "other",
             currency: "USD",

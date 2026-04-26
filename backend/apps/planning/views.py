@@ -30,17 +30,39 @@ class PlanListView(ListAPIView):
 
 class GeneratePlanView(APIView):
     def post(self, request, qc_run_id):
-        qc_run = LiteratureQcRun.objects.get(id=qc_run_id)
+        qc_run = LiteratureQcRun.objects.select_related("question", "question__project").get(id=qc_run_id)
+        question = qc_run.question
+        project = question.project
+
+        # Create placeholder plan with status "generating" so it appears immediately
+        from apps.planning.services.plan_generator import build_plan_title
+        placeholder_title = build_plan_title(question.raw_text)
+        plan = ExperimentPlan.objects.create(
+            project=project,
+            question=question,
+            qc_run=qc_run,
+            title=placeholder_title,
+            status="generating",
+            executive_summary="Plan generation in progress...",
+        )
+
         agent_run = AgentRun.objects.create(
             run_type="plan_generation",
             status="running",
-            input_payload={"qc_run_id": str(qc_run.id), "question_id": str(qc_run.question_id)},
+            input_payload={
+                "qc_run_id": str(qc_run.id),
+                "question_id": str(qc_run.question_id),
+                "plan_id": str(plan.id),
+            },
         )
         AgentEvent.objects.create(run=agent_run, label="Generating protocol", payload={})
         from apps.agents.tasks import generate_plan_task
 
-        generate_plan_task.delay(str(qc_run.id), str(agent_run.id))
-        return Response({"agent_run_id": str(agent_run.id)}, status=status.HTTP_202_ACCEPTED)
+        generate_plan_task.delay(str(qc_run.id), str(agent_run.id), str(plan.id))
+        return Response(
+            {"agent_run_id": str(agent_run.id), "plan_id": str(plan.id)},
+            status=status.HTTP_202_ACCEPTED
+        )
 
 
 class PlanDetailView(RetrieveAPIView):

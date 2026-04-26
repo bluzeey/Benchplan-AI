@@ -23,10 +23,10 @@ import { useQuery } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
 import { apiFetch } from "@/lib/api"
 import { useAuth } from "@/app/auth-provider"
-import { ProjectSchema } from "@/lib/schemas"
+import { ExperimentPlanSchema } from "@/lib/schemas"
 import { z } from "zod"
 
-const ProjectsListSchema = z.array(ProjectSchema)
+const PlansListSchema = z.array(ExperimentPlanSchema)
 
 const nav = [
   { label: "New Plan", to: "/dashboard", icon: Home },
@@ -77,9 +77,9 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const { user, logout } = useAuth()
 
-  const { data: recentProjects = [] } = useQuery({
-    queryKey: ["projects"],
-    queryFn: () => apiFetch("/api/projects/", ProjectsListSchema),
+  const { data: recentPlans = [] } = useQuery({
+    queryKey: ["plans-list"],
+    queryFn: () => apiFetch("/api/plans/", PlansListSchema),
   })
 
   const handleLogout = async () => {
@@ -178,22 +178,33 @@ export function Sidebar() {
               Recent Plans
             </div>
             <div className="space-y-1">
-              {recentProjects.slice(0, 5).map((project) => {
-                const Icon = domainIcons[project.domain || ""] || FlaskConical
-                const colorClass = domainColors[project.domain || ""] || "text-cyan-400"
+              {recentPlans.slice(0, 5).map((plan) => {
+                // Status color mapping
+                const statusColors: Record<string, string> = {
+                  generating: "text-blue-400",
+                  completed: "text-green-400",
+                  draft: "text-gray-400",
+                  error: "text-red-400",
+                }
+                const colorClass = statusColors[plan.status] || "text-cyan-400"
+                const statusLabel = plan.status === "generating" ? "In Progress" :
+                                   plan.status === "completed" ? "Ready" :
+                                   plan.status === "error" ? "Failed" : plan.status
+
                 return (
                   <button
-                    key={project.id}
-                    onClick={() => navigate(`/projects/${project.id}`)}
+                    key={plan.id}
+                    onClick={() => navigate(`/plans/${plan.id}`)}
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent/60"
                   >
                     <div className={cn("flex h-8 w-8 items-center justify-center rounded-md bg-muted", colorClass)}>
-                      <Icon className="h-4 w-4" />
+                      <FileText className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-foreground">{project.title}</p>
+                      <p className="truncate font-medium text-foreground">{plan.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {project.domain || "Other"} • {project.updated_at ? formatRelativeTime(project.updated_at) : "recent"}
+                        <span className={colorClass}>{statusLabel}</span>
+                        {plan.updated_at ? ` • ${formatRelativeTime(plan.updated_at)}` : null}
                       </p>
                     </div>
                   </button>

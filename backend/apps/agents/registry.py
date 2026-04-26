@@ -187,11 +187,15 @@ def _build_materials() -> list[dict]:
     ]
 
 
-def generate_plan_from_qc(qc_run_id: str, agent_run_id: str) -> ExperimentPlan:
+def generate_plan_from_qc(qc_run_id: str, agent_run_id: str, plan_id: str) -> ExperimentPlan:
     qc_run = LiteratureQcRun.objects.select_related("question", "question__project").get(id=qc_run_id)
     question: ExperimentQuestion = qc_run.question
     project = question.project
     agent_run = AgentRun.objects.get(id=agent_run_id)
+
+    # Get the existing placeholder plan
+    from apps.planning.models import ExperimentPlan
+    plan = ExperimentPlan.objects.get(id=plan_id)
 
     parsed = question.parsed_json or parse_hypothesis(question.raw_text)
     references = list(qc_run.references.values("id", "title", "source", "year", "doi", "url", "relevance_score", "why_relevant"))
@@ -263,20 +267,24 @@ def generate_plan_from_qc(qc_run_id: str, agent_run_id: str) -> ExperimentPlan:
     if citation_report["coverage"] < 0.5:
         plan_json["assumptions"].append("Evidence coverage is limited; major steps need scientist verification.")
 
-    plan = ExperimentPlan.objects.create(
-        project=project,
-        question=question,
-        qc_run=qc_run,
-        title=plan_json["title"],
-        status="completed",
-        executive_summary=plan_json["executive_summary"],
-        plan_json=plan_json,
-        estimated_budget_min=budget_totals["total_min"],
-        estimated_budget_max=budget_totals["total_max"],
-        estimated_duration_weeks_min=8,
-        estimated_duration_weeks_max=10,
-        scientist_review_status="required",
-    )
+    # Update the existing plan with all the generated data
+    plan.title = plan_json["title"]
+    plan.status = "completed"
+    plan.executive_summary = plan_json["executive_summary"]
+    plan.plan_json = plan_json
+    plan.estimated_budget_min = budget_totals["total_min"]
+    plan.estimated_budget_max = budget_totals["total_max"]
+    plan.estimated_duration_weeks_min = 8
+    plan.estimated_duration_weeks_max = 10
+    plan.scientist_review_status = "required"
+    plan.save()
+
+    # Clear existing related data if regenerating
+    plan.sections.all().delete()
+    plan.protocol_steps.all().delete()
+    plan.materials.all().delete()
+    plan.budget_lines.all().delete()
+    plan.timeline_phases.all().delete()
 
     section_specs = [
         ("overview", "Overview", 1, {"executive_summary": plan.executive_summary}),

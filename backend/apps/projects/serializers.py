@@ -42,7 +42,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 
 class ProjectCreateSerializer(serializers.Serializer):
-    title = serializers.CharField(max_length=255)
+    title = serializers.CharField(max_length=255, required=False, allow_blank=True)
     hypothesis = serializers.CharField(min_length=40)
     domain = serializers.CharField(required=False, allow_blank=True)
     currency = serializers.CharField(required=False, allow_blank=True)
@@ -54,20 +54,71 @@ class ProjectCreateSerializer(serializers.Serializer):
         default=list,
     )
 
+    def _generate_project_title(self, hypothesis: str) -> str:
+        """Generate a concise project title from the hypothesis."""
+        try:
+            from apps.agents.llm_gateway import llm_gateway
+
+            prompt = """Generate a concise project title (2-6 words) based on this research hypothesis.
+Rules:
+- Be specific about the research topic
+- Include key variables (organism/intervention/outcome)
+- Professional scientific tone
+- Return ONLY the title, nothing else"""
+
+            title = llm_gateway.generate_text(
+                prompt=prompt,
+                payload={"hypothesis": hypothesis},
+                system_message="You generate professional scientific project titles.",
+                temperature=0.3,
+            )
+            title = title.strip().strip('"').strip("'")
+            if len(title) > 3:
+                return title
+        except Exception:
+            pass
+
+        # Fallback: extract key terms
+        import re
+        words = hypothesis.split()
+        key_terms = []
+        skip_words = {"the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+                      "will", "is", "are", "be", "been", "being", "have", "has", "had", "do", "does", "did",
+                      "can", "could", "may", "might", "must", "shall", "should", "would", "compared", "versus",
+                      "at", "least", "more", "less", "than", "using", "under", "after", "during", "that", "this"}
+
+        for word in words[:20]:
+            clean = re.sub(r'[^\w\s-]', '', word).lower()
+            if clean and clean not in skip_words and len(clean) > 2:
+                key_terms.append(word)
+            if len(key_terms) >= 4:
+                break
+
+        if key_terms:
+            return " ".join(key_terms[:5])
+
+        return hypothesis[:50].strip()
+
     def create(self, validated_data):
         attachments_data = validated_data.pop("attachments", [])
-        
+        hypothesis = validated_data["hypothesis"]
+
+        # Generate title if not provided
+        title = validated_data.get("title", "").strip()
+        if not title:
+            title = self._generate_project_title(hypothesis)
+
         project = Project.objects.create(
-            title=validated_data["title"],
+            title=title,
             domain=validated_data.get("domain", ""),
             owner=self.context.get("request").user if self.context.get("request") and self.context.get("request").user.is_authenticated else None,
         )
         ExperimentQuestion.objects.create(
             project=project,
-            raw_text=validated_data["hypothesis"],
+            raw_text=hypothesis,
             domain=validated_data.get("domain", ""),
         )
-        
+
         # Create attachment records for uploaded files
         for att in attachments_data:
             if isinstance(att, dict) and att.get("url"):
@@ -79,7 +130,7 @@ class ProjectCreateSerializer(serializers.Serializer):
                     content_type=att.get("type", "application/octet-stream"),
                     size=att.get("size", 0),
                 )
-        
+
         return project
 
     def to_representation(self, instance):
