@@ -219,134 +219,143 @@ export function PlanPage() {
   const plan = planQuery.data
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+    <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:h-[calc(100vh-4rem)] lg:min-h-0">
       <PlanSectionNav sections={plan.sections ?? []} />
-      <section className="space-y-4">
-        <h2 className="text-3xl font-semibold tracking-tight">{plan.title}</h2>
-        <PlanSummaryCards plan={plan} />
-        <Card className="rounded-2xl border-border/70">
-          <CardHeader>
-            <CardTitle>Executive summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">{plan.executive_summary}</p>
-            <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3 text-xs text-muted-foreground">
-              <span className="font-mono">Plan id: {plan.id}</span>
-              <span className="font-mono">Status: {plan.status}</span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl border-border/70">
-          <CardHeader>
-            <CardTitle>Protocol</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {(plan.protocol_steps ?? []).map((step) => (
-              <ProtocolStepCard key={step.id} step={step} />
-            ))}
-          </CardContent>
-        </Card>
-        {(plan.sections ?? []).length ? (
+      <section className="flex flex-col lg:min-h-0">
+        {/* Header - Stays visible */}
+        <div className="space-y-4 shrink-0">
+          <h2 className="text-3xl font-semibold tracking-tight">{plan.title}</h2>
+          <PlanSummaryCards plan={plan} />
           <Card className="rounded-2xl border-border/70">
             <CardHeader>
-              <CardTitle>Generated sections</CardTitle>
+              <CardTitle>Executive summary</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-            {(plan.sections ?? []).map((section) => {
-              const formattedContent = formatSectionContent({
-                key: section.key,
-                title: section.title,
-                content_markdown: section.content_markdown,
-                content_json: section.content_json || {},
-                needs_review: section.needs_review
-              })
-              return (
-                <article key={section.id} id={`section-${section.id}`} className="rounded-xl border border-border/70 bg-background/60 p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold">{section.title}</h4>
-                    {section.needs_review && (
-                      <Badge variant="warning" className="text-[10px]">Needs Review</Badge>
-                    )}
-                  </div>
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    {formattedContent.split("\n").map((line, i) => {
-                      // Render bold text
-                      if (line.startsWith("**") && line.includes(":**")) {
-                        const [label, ...rest] = line.split(":**")
-                        return (
-                          <p key={i} className="text-sm my-1">
-                            <span className="font-semibold">{label.replace(/^\*\*/, "")}:</span>
-                            {rest.join(":**").replace(/\*\*$/, "")}
-                          </p>
-                        )
-                      }
-                      // Render bullet points
-                      if (line.startsWith("- ")) {
-                        return (
-                          <p key={i} className="text-sm my-1 ml-4">
-                            • {line.replace(/^- /, "").replace(/\*\*/g, "")}
-                          </p>
-                        )
-                      }
-                      // Render headers (numbered steps)
-                      if (line.match(/^\*\*\d+\./)) {
-                        return <h5 key={i} className="text-sm font-semibold mt-3 mb-1">{line.replace(/\*\*/g, "")}</h5>
-                      }
-                      // Render sub-headers
-                      if (line.startsWith("**") && line.endsWith("**")) {
-                        return <h5 key={i} className="text-sm font-semibold mt-3 mb-1">{line.replace(/\*\*/g, "")}</h5>
-                      }
-                      // Render italic/notes
-                      if (line.startsWith("*") && line.endsWith("*")) {
-                        return <p key={i} className="text-xs text-muted-foreground italic my-1">{line.replace(/\*/g, "")}</p>
-                      }
-                      // Render blockquotes (warnings)
-                      if (line.startsWith(">")) {
-                        return (
-                          <blockquote key={i} className="text-sm border-l-2 border-amber-500 pl-3 my-2 text-muted-foreground">
-                            {line.replace(/^>\s*/, "").replace(/\*\*/g, "")}
-                          </blockquote>
-                        )
-                      }
-                      // Regular text
-                      if (line.trim()) {
-                        return <p key={i} className="text-sm text-muted-foreground my-1">{line.replace(/\*\*/g, "")}</p>
-                      }
-                      return null
-                    })}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 border-t border-border/70 mt-3 pt-2 text-xs text-muted-foreground">
-                    <span className="font-mono">ID: {section.key}</span>
-                    {"confidence" in section && section.confidence != null && (
-                      <span className="font-mono">Confidence: {Math.round(Number(section.confidence) * 100)}%</span>
-                    )}
-                  </div>
-                </article>
-              )
-            })}
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">{plan.executive_summary}</p>
+              <div className="flex flex-wrap items-center gap-2 border-t border-border/70 pt-3 text-xs text-muted-foreground">
+                <span className="font-mono">Plan id: {plan.id}</span>
+                <span className="font-mono">Status: {plan.status}</span>
+              </div>
             </CardContent>
           </Card>
-        ) : null}
-        {materialsQuery.data ? <MaterialsTable materials={materialsQuery.data} /> : null}
-        {budgetQuery.data ? <BudgetTable lines={budgetQuery.data} /> : null}
-        {timelineQuery.data ? <TimelineView phases={timelineQuery.data} /> : null}
-        <ValidationPanel validation={((plan.plan_json ?? {}).validation as Record<string, unknown>) || {}} />
-        <SafetyPanel risks={((plan.plan_json ?? {}).risks_and_safety as unknown[]) || []} />
+        </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline">
-            <Link to={`/plans/${plan.id}/review`}>Open Scientist Review</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <a href={`/api/plans/${plan.id}/export/markdown/`} target="_blank" rel="noreferrer">
-              Export Markdown
-            </a>
-          </Button>
-          <Button asChild variant="outline">
-            <a href={`/api/plans/${plan.id}/export/materials.csv`} target="_blank" rel="noreferrer">
-              Export Materials CSV
-            </a>
-          </Button>
+        {/* Scrollable Content Area */}
+        <div className="flex-1 lg:min-h-0 lg:overflow-y-auto custom-scrollbar lg:pr-2 mt-4">
+          <div className="space-y-4 pb-4">
+            <Card className="rounded-2xl border-border/70">
+              <CardHeader>
+                <CardTitle>Protocol</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {(plan.protocol_steps ?? []).map((step) => (
+                  <ProtocolStepCard key={step.id} step={step} />
+                ))}
+              </CardContent>
+            </Card>
+            {(plan.sections ?? []).length ? (
+              <Card className="rounded-2xl border-border/70">
+                <CardHeader>
+                  <CardTitle>Generated sections</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                {(plan.sections ?? []).map((section) => {
+                  const formattedContent = formatSectionContent({
+                    key: section.key,
+                    title: section.title,
+                    content_markdown: section.content_markdown,
+                    content_json: section.content_json || {},
+                    needs_review: section.needs_review
+                  })
+                  return (
+                    <article key={section.id} id={`section-${section.id}`} className="scroll-mt-6 rounded-xl border border-border/70 bg-background/60 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold">{section.title}</h4>
+                        {section.needs_review && (
+                          <Badge variant="warning" className="text-[10px]">Needs Review</Badge>
+                        )}
+                      </div>
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        {formattedContent.split("\n").map((line, i) => {
+                          // Render bold text
+                          if (line.startsWith("**") && line.includes(":**")) {
+                            const [label, ...rest] = line.split(":**")
+                            return (
+                              <p key={i} className="text-sm my-1">
+                                <span className="font-semibold">{label.replace(/^\*\*/, "")}:</span>
+                                {rest.join(":**").replace(/\*\*$/, "")}
+                              </p>
+                            )
+                          }
+                          // Render bullet points
+                          if (line.startsWith("- ")) {
+                            return (
+                              <p key={i} className="text-sm my-1 ml-4">
+                                • {line.replace(/^- /, "").replace(/\*\*/g, "")}
+                              </p>
+                            )
+                          }
+                          // Render headers (numbered steps)
+                          if (line.match(/^\*\*\d+\./)) {
+                            return <h5 key={i} className="text-sm font-semibold mt-3 mb-1">{line.replace(/\*\*/g, "")}</h5>
+                          }
+                          // Render sub-headers
+                          if (line.startsWith("**") && line.endsWith("**")) {
+                            return <h5 key={i} className="text-sm font-semibold mt-3 mb-1">{line.replace(/\*\*/g, "")}</h5>
+                          }
+                          // Render italic/notes
+                          if (line.startsWith("*") && line.endsWith("*")) {
+                            return <p key={i} className="text-xs text-muted-foreground italic my-1">{line.replace(/\*/g, "")}</p>
+                          }
+                          // Render blockquotes (warnings)
+                          if (line.startsWith(">")) {
+                            return (
+                              <blockquote key={i} className="text-sm border-l-2 border-amber-500 pl-3 my-2 text-muted-foreground">
+                                {line.replace(/^>\s*/, "").replace(/\*\*/g, "")}
+                              </blockquote>
+                            )
+                          }
+                          // Regular text
+                          if (line.trim()) {
+                            return <p key={i} className="text-sm text-muted-foreground my-1">{line.replace(/\*\*/g, "")}</p>
+                          }
+                          return null
+                        })}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 border-t border-border/70 mt-3 pt-2 text-xs text-muted-foreground">
+                        <span className="font-mono">ID: {section.key}</span>
+                        {"confidence" in section && section.confidence != null && (
+                          <span className="font-mono">Confidence: {Math.round(Number(section.confidence) * 100)}%</span>
+                        )}
+                      </div>
+                    </article>
+                  )
+                })}
+                </CardContent>
+              </Card>
+            ) : null}
+            {materialsQuery.data ? <MaterialsTable materials={materialsQuery.data} /> : null}
+            {budgetQuery.data ? <BudgetTable lines={budgetQuery.data} /> : null}
+            {timelineQuery.data ? <TimelineView phases={timelineQuery.data} /> : null}
+            <ValidationPanel validation={((plan.plan_json ?? {}).validation as Record<string, unknown>) || {}} />
+            <SafetyPanel risks={((plan.plan_json ?? {}).risks_and_safety as unknown[]) || []} />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild variant="outline">
+                <Link to={`/plans/${plan.id}/review`}>Open Scientist Review</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <a href={`/api/plans/${plan.id}/export/markdown/`} target="_blank" rel="noreferrer">
+                  Export Markdown
+                </a>
+              </Button>
+              <Button asChild variant="outline">
+                <a href={`/api/plans/${plan.id}/export/materials.csv`} target="_blank" rel="noreferrer">
+                  Export Materials CSV
+                </a>
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
     </div>

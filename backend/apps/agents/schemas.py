@@ -52,3 +52,24 @@ class PlanOutput(BaseModel):
     risks_and_safety: list[dict[str, Any]]
     assumptions: list[str]
     references: list[dict[str, Any]]
+
+
+# ==========================================
+# ENHANCED SCHEMAS V2 - For AI-driven planning
+# ==========================================
+
+from .schemas_v2 import (
+    BudgetEstimate,
+    CitationLink,
+    CritiqueIssue,
+    EvidenceCoverage,
+    ExperimentPlanOutput,
+    LaborLine,
+    MaterialSpec,
+    PlanCritique,
+    ProtocolStep,
+    RiskAssessment,
+    TimelineEstimate,
+    TimelinePhase,
+    ValidationCriteria,
+)

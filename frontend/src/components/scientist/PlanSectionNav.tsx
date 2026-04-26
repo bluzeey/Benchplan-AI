@@ -4,8 +4,8 @@ import type { PlanSection } from "@/lib/schemas"
 
 export function PlanSectionNav({ sections }: { sections: Pick<PlanSection, "id" | "title">[] }) {
   return (
-    <Card className="sticky top-24 self-start hidden h-fit max-h-[calc(100vh-7rem)] overflow-y-auto rounded-2xl lg:block">
-      <CardHeader className="pb-3">
+    <Card className="sticky top-0 self-start hidden h-[calc(100vh-4rem)] overflow-y-auto rounded-2xl lg:block">
+      <CardHeader className="pb-3 shrink-0">
         <CardTitle className="text-base">Sections</CardTitle>
         <p className="text-sm text-muted-foreground">Jump to generated modules</p>
       </CardHeader>
