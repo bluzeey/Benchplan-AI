@@ -85,7 +85,13 @@ function needsCsrf(method: string): boolean {
   return ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase())
 }
 
-export async function apiFetch<T>(path: string, schema: z.ZodSchema<T>, options: RequestInit = {}): Promise<T> {
+// Helper to check if error is CSRF related
+function isCsrfError(error: Record<string, unknown>): boolean {
+  const detail = String(error.detail || "").toLowerCase()
+  return detail.includes("csrf") || detail.includes("forbidden")
+}
+
+export async function apiFetch<T>(path: string, schema: z.ZodSchema<T>, options: RequestInit = {}, retryCount = 0): Promise<T> {
   const method = options.method || "GET"
   const includeCsrf = needsCsrf(method)
 
@@ -102,6 +108,14 @@ export async function apiFetch<T>(path: string, schema: z.ZodSchema<T>, options:
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}))
+
+    // If CSRF error and we haven't retried yet, refresh token and retry once
+    if (res.status === 403 && isCsrfError(error) && retryCount < 1 && includeCsrf) {
+      console.log("CSRF token expired, refreshing...")
+      await refreshCsrfToken()
+      return apiFetch(path, schema, options, retryCount + 1)
+    }
+
     throw new Error(extractErrorMessage(error, res.status))
   }
 
@@ -109,7 +123,7 @@ export async function apiFetch<T>(path: string, schema: z.ZodSchema<T>, options:
   return schema.parse(data)
 }
 
-export async function apiFetchRaw(path: string, options: RequestInit = {}) {
+export async function apiFetchRaw(path: string, options: RequestInit = {}, retryCount = 0) {
   const method = options.method || "GET"
   const includeCsrf = needsCsrf(method)
 
@@ -126,6 +140,14 @@ export async function apiFetchRaw(path: string, options: RequestInit = {}) {
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}))
+
+    // If CSRF error and we haven't retried yet, refresh token and retry once
+    if (res.status === 403 && isCsrfError(error) && retryCount < 1 && includeCsrf) {
+      console.log("CSRF token expired, refreshing...")
+      await refreshCsrfToken()
+      return apiFetchRaw(path, options, retryCount + 1)
+    }
+
     throw new Error(extractErrorMessage(error, res.status))
   }
 
@@ -135,6 +157,12 @@ export async function apiFetchRaw(path: string, options: RequestInit = {}) {
 // Reset CSRF token (call on logout)
 export function resetCsrfToken() {
   csrfToken = null
+}
+
+// Refresh CSRF token after login/signup (token gets rotated by Django)
+export async function refreshCsrfToken(): Promise<string | null> {
+  resetCsrfToken()
+  return fetchCsrfToken()
 }
 
 export { API_BASE_URL }

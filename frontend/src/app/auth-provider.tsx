@@ -1,7 +1,7 @@
 import { ReactNode, createContext, useContext, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
-import { apiFetch, apiFetchRaw, resetCsrfToken } from "@/lib/api"
+import { apiFetch, apiFetchRaw, resetCsrfToken, refreshCsrfToken } from "@/lib/api"
 
 const UserSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((val) => String(val)),
@@ -80,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       const user = response.user as User
       setUser(user)
+      // Django rotates CSRF token on login - fetch new one
+      await refreshCsrfToken()
       toast.success("Welcome back!", {
         description: `Logged in as ${user.full_name}`,
       })
@@ -107,6 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       const user = response.user as User
       setUser(user)
+      // Django rotates CSRF token on signup/login - fetch new one
+      await refreshCsrfToken()
       toast.success("Account created!", {
         description: `Welcome, ${user.full_name}`,
       })
