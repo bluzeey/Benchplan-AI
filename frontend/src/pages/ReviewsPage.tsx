@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
-import { z } from "zod"
 import { motion } from "framer-motion"
 import { CheckCircle, MessageSquare, ArrowRight, Sparkles, Star, Clock, FileSearch } from "lucide-react"
 
@@ -12,26 +11,14 @@ import { cn } from "@/lib/utils"
 import { EmptyState } from "@/components/ui/empty-state"
 import { PlansGridSkeleton, PageHeaderSkeleton } from "@/components/ui/skeleton"
 import { CollaborationIndicator } from "@/components/ui/collaboration-indicator"
+import { ReviewsListSchema } from "@/lib/schemas"
+import { queryKeys } from "@/lib/query-keys"
 import { 
   fadeInUp, 
   staggerContainer, 
   staggerItem,
   scaleIn
 } from "@/lib/motion"
-
-const ReviewListItemSchema = z.object({
-  id: z.string(),
-  plan: z.string(),
-  plan_title: z.string(),
-  project_title: z.string(),
-  status: z.string(),
-  overall_rating: z.number().nullable().optional(),
-  annotation_count: z.number(),
-  created_at: z.string(),
-  completed_at: z.string().nullable().optional(),
-})
-
-const ReviewsListSchema = z.array(ReviewListItemSchema)
 
 const statusConfig: Record<string, { color: string; bgColor: string; label: string; icon: typeof CheckCircle }> = {
   in_progress: {
@@ -162,8 +149,9 @@ export function ReviewsPage() {
   const navigate = useNavigate()
 
   const reviewsQuery = useQuery({
-    queryKey: ["reviews-list"],
+    queryKey: queryKeys.reviews.list,
     queryFn: () => apiFetch("/api/reviews/", ReviewsListSchema),
+    staleTime: 30_000,
   })
 
   const reviews = reviewsQuery.data ?? []

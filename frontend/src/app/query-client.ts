@@ -45,9 +45,24 @@ function extractErrorMessage(error: unknown): string {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // Retry failed requests once after 1 second delay
       retry: 1,
-      staleTime: 15_000,
+      retryDelay: 1000,
+      // Keep data fresh for 60 seconds before refetching
+      staleTime: 60_000,
+      // Keep inactive data in cache for 5 minutes
+      gcTime: 5 * 60_000,
+      // Don't refetch on window focus (better UX)
       refetchOnWindowFocus: false,
+      // Don't refetch on reconnect (we have staleTime)
+      refetchOnReconnect: false,
+      // Don't refetch on mount if data is fresh
+      refetchOnMount: false,
+    },
+    mutations: {
+      // Retry mutations once
+      retry: 1,
+      retryDelay: 1000,
     },
   },
   queryCache: new QueryCache({

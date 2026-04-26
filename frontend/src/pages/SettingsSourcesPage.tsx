@@ -4,18 +4,14 @@ import { z } from "zod"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { apiFetch } from "@/lib/api"
-
-const SafetyAssessmentSchema = z.object({
-  id: z.string(),
-  state: z.string(),
-  categories: z.array(z.string()),
-  created_at: z.string(),
-})
+import { SafetyAssessmentSchema } from "@/lib/schemas"
+import { queryKeys } from "@/lib/query-keys"
 
 export function SettingsSourcesPage() {
   const safetyQuery = useQuery({
-    queryKey: ["safety-assessments"],
+    queryKey: queryKeys.safety.assessments,
     queryFn: () => apiFetch("/api/safety/assessments/", z.array(SafetyAssessmentSchema)),
+    staleTime: 60_000,
   })
 
   return (

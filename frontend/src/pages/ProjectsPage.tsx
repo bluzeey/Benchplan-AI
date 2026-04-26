@@ -46,6 +46,13 @@ import {
   PageHeaderSkeleton 
 } from "@/components/ui/skeleton"
 import { 
+  ProjectsListSchema,
+  PlansListSchema,
+  ReviewsListSchema,
+  type PlanListItem,
+} from "@/lib/schemas"
+import { queryKeys } from "@/lib/query-keys"
+import { 
   fadeInUp, 
   staggerContainer, 
   staggerItem,
@@ -54,8 +61,8 @@ import {
   scaleIn
 } from "@/lib/motion"
 
-// Schemas
-const ProjectSchema = z.object({
+// Project page specific schemas (using shared where possible)
+const ProjectWithQuestionsSchema = z.object({
   id: z.string(),
   title: z.string(),
   domain: z.string().nullable().optional(),
@@ -65,19 +72,10 @@ const ProjectSchema = z.object({
   questions: z.array(z.object({ raw_text: z.string() })).optional(),
 })
 
-const PlanSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  status: z.string(),
-  project: z.string(),
-  scientist_review_status: z.string(),
-  estimated_budget_min: z.number().nullable().optional(),
-  estimated_budget_max: z.number().nullable().optional(),
-  created_at: z.string(),
-  updated_at: z.string(),
-})
+const ProjectsWithQuestionsListSchema = z.array(ProjectWithQuestionsSchema)
 
-const ReviewSchema = z.object({
+// Page-level review schema (simpler than the full ReviewListItem)
+const PageReviewSchema = z.object({
   id: z.string(),
   plan: z.string(),
   status: z.string(),
@@ -85,9 +83,7 @@ const ReviewSchema = z.object({
   created_at: z.string(),
 })
 
-const ProjectsListSchema = z.array(ProjectSchema)
-const PlansListSchema = z.array(PlanSchema)
-const ReviewsListSchema = z.array(ReviewSchema)
+const PageReviewsListSchema = z.array(PageReviewSchema)
 
 // Domain icons and colors with neon glow support
 const domainIcons: Record<string, typeof FlaskConical> = {
@@ -229,7 +225,7 @@ function TableRow({
     id: string
     title: string
     status: string
-    project: string
+    project: string | number
     scientist_review_status: string
     created_at: string
     updated_at: string
@@ -351,20 +347,30 @@ export function ProjectsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 7
 
-  // Fetch data
+  // Fetch data using shared cache keys
   const projectsQuery = useQuery({
-    queryKey: ["projects-list"],
-    queryFn: () => apiFetch("/api/projects/", ProjectsListSchema),
+    queryKey: queryKeys.projects.list,
+    queryFn: () => apiFetch("/api/projects/", ProjectsWithQuestionsListSchema),
+    staleTime: 30_000,
   })
 
   const plansQuery = useQuery({
-    queryKey: ["plans-list"],
+    queryKey: queryKeys.plans.list,
     queryFn: () => apiFetch("/api/plans/", PlansListSchema),
+    staleTime: 30_000,
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (data && data.some((p) => p.status === "generating")) {
+        return 3000
+      }
+      return false
+    },
   })
 
   const reviewsQuery = useQuery({
-    queryKey: ["reviews-list"],
-    queryFn: () => apiFetch("/api/reviews/", ReviewsListSchema),
+    queryKey: queryKeys.reviews.list,
+    queryFn: () => apiFetch("/api/reviews/", PageReviewsListSchema),
+    staleTime: 30_000,
   })
 
   const projects = projectsQuery.data ?? []

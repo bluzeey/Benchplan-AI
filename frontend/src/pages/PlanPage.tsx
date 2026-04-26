@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { apiFetch } from "@/lib/api"
 import { BudgetLineSchema, ExperimentPlanSchema, MaterialSchema, TimelinePhaseSchema } from "@/lib/schemas"
+import { queryKeys } from "@/lib/query-keys"
 import type { PlanSection } from "@/lib/schemas"
 
 // Check if content looks like raw code (dict string)
@@ -183,24 +184,32 @@ export function PlanPage() {
   const { planId } = useParams()
 
   const planQuery = useQuery({
-    queryKey: ["plan", planId],
+    queryKey: queryKeys.plans.detail(planId || ""),
     queryFn: () => apiFetch(`/api/plans/${planId}/`, ExperimentPlanSchema),
     enabled: Boolean(planId),
+    staleTime: 30_000,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status === "generating" ? 3000 : false
+    },
   })
   const materialsQuery = useQuery({
-    queryKey: ["materials", planId],
+    queryKey: queryKeys.plans.materials(planId || ""),
     queryFn: () => apiFetch(`/api/plans/${planId}/materials/`, z.array(MaterialSchema)),
     enabled: Boolean(planId),
+    staleTime: 60_000,
   })
   const budgetQuery = useQuery({
-    queryKey: ["budget", planId],
+    queryKey: queryKeys.plans.budget(planId || ""),
     queryFn: () => apiFetch(`/api/plans/${planId}/budget/`, z.array(BudgetLineSchema)),
     enabled: Boolean(planId),
+    staleTime: 60_000,
   })
   const timelineQuery = useQuery({
-    queryKey: ["timeline", planId],
+    queryKey: queryKeys.plans.timeline(planId || ""),
     queryFn: () => apiFetch(`/api/plans/${planId}/timeline/`, z.array(TimelinePhaseSchema)),
     enabled: Boolean(planId),
+    staleTime: 60_000,
   })
 
   if (planQuery.isLoading) return <p className="text-sm text-muted-foreground">Loading plan...</p>

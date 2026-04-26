@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { z } from "zod"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -10,6 +10,7 @@ import { StrataMark } from "@/components/ui/strata-logo"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ProjectSchema } from "@/lib/schemas"
+import { invalidatePatterns } from "@/lib/query-keys"
 import { 
   fadeInUp, 
   staggerContainer, 
@@ -81,6 +82,7 @@ function AnimatedStrataMark({ className }: { className?: string }) {
 
 export function DashboardPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const [draftHypothesis, setDraftHypothesis] = useState("")
 
@@ -121,6 +123,8 @@ export function DashboardPage() {
       return { project, qc }
     },
     onSuccess: (result) => {
+      // Invalidate projects list so it appears in sidebar/pages
+      queryClient.invalidateQueries({ queryKey: invalidatePatterns.projects.all })
       navigate(
         `/runs/${result.qc.agent_run_id}?qcRunId=${result.qc.qc_run_id}&projectId=${result.project.id}`
       )

@@ -197,6 +197,68 @@ export const FeedbackExampleSchema = z.object({
   lesson: z.string(),
 })
 
+export const SafetyAssessmentSchema = z.object({
+  id: IdSchema,
+  state: z.string(),
+  categories: z.array(z.string()),
+  created_at: z.string(),
+})
+
+// ==========================================
+// LIST SCHEMAS - For list endpoints with shared keys
+// ==========================================
+
+// Canonical Plan List Item Schema
+// NOTE: estimated_budget_* can be number OR string from DRF
+export const PlanListItemSchema = z.object({
+  id: IdSchema,
+  title: z.string(),
+  status: z.string(),
+  project: z.union([IdSchema, z.number()]),
+  project_title: z.string(),
+  question: z.union([IdSchema, z.number()]).optional(),
+  question_text: z.string().optional(),
+  executive_summary: z.string().optional(),
+  estimated_budget_min: z.union([z.number(), z.string()]).nullable(),
+  estimated_budget_max: z.union([z.number(), z.string()]).nullable(),
+  estimated_duration_weeks_min: z.number().nullable().optional(),
+  estimated_duration_weeks_max: z.number().nullable().optional(),
+  scientist_review_status: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+})
+
+export const PlansListSchema = z.array(PlanListItemSchema)
+
+// Canonical Project List Item Schema
+export const ProjectListItemSchema = z.object({
+  id: IdSchema,
+  title: z.string(),
+  domain: z.string().nullable().optional(),
+  owner_name: z.string().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  questions: z.array(QuestionSchema).optional(),
+})
+
+export const ProjectsListSchema = z.array(ProjectListItemSchema)
+
+// Canonical Review List Item Schema
+export const ReviewListItemSchema = z.object({
+  id: IdSchema,
+  plan: z.union([IdSchema, z.number()]),
+  plan_title: z.string(),
+  project_title: z.string(),
+  status: z.string(),
+  overall_rating: z.number().nullable().optional(),
+  annotation_count: z.number(),
+  created_at: z.string(),
+  completed_at: z.string().nullable().optional(),
+})
+
+export const ReviewsListSchema = z.array(ReviewListItemSchema)
+
+// ==========================================
 // Export output types (after transforms) for use in components
 export type PlanSection = z.output<typeof PlanSectionSchema>
 export type ProtocolStep = z.output<typeof ProtocolStepSchema>
@@ -212,3 +274,8 @@ type _LiteratureQcRun = z.output<typeof LiteratureQcRunSchema>
 export type LiteratureQcRun = Omit<_LiteratureQcRun, "references"> & { references: Reference[] }
 export type Question = z.output<typeof QuestionSchema>
 export type Project = z.output<typeof ProjectSchema>
+
+// List types
+export type PlanListItem = z.output<typeof PlanListItemSchema>
+export type ProjectListItem = z.output<typeof ProjectListItemSchema>
+export type ReviewListItem = z.output<typeof ReviewListItemSchema>

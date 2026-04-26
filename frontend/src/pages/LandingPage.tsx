@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "react-router-dom"
 import { z } from "zod"
 
@@ -8,6 +8,7 @@ import { SampleHypothesisCards } from "@/components/scientist/SampleHypothesisCa
 import { StrataLogo } from "@/components/ui/strata-logo"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ProjectSchema } from "@/lib/schemas"
+import { invalidatePatterns } from "@/lib/query-keys"
 
 const StartQcSchema = z.object({
   qc_run_id: z.string(),
@@ -43,6 +44,7 @@ const samples = [
 
 export function LandingPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [draftHypothesis, setDraftHypothesis] = useState("")
 
   const createProject = useMutation({
@@ -82,6 +84,8 @@ export function LandingPage() {
       return { project, qc }
     },
     onSuccess: (result) => {
+      // Invalidate projects list so it appears in sidebar/pages
+      queryClient.invalidateQueries({ queryKey: invalidatePatterns.projects.all })
       navigate(
         `/runs/${result.qc.agent_run_id}?qcRunId=${result.qc.qc_run_id}&projectId=${result.project.id}`
       )

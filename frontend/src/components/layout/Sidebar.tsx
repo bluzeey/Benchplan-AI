@@ -23,12 +23,10 @@ import { useQuery } from "@tanstack/react-query"
 import { cn } from "@/lib/utils"
 import { apiFetch } from "@/lib/api"
 import { useAuth } from "@/app/auth-provider"
-import { ExperimentPlanSchema } from "@/lib/schemas"
+import { PlansListSchema } from "@/lib/schemas"
 import { StrataLogo } from "@/components/ui/strata-logo"
-import { z } from "zod"
+import { queryKeys } from "@/lib/query-keys"
 import { fadeInLeft, staggerContainer, staggerItem, hoverLift } from "@/lib/motion"
-
-const PlansListSchema = z.array(ExperimentPlanSchema)
 
 const nav = [
   { label: "New Plan", to: "/dashboard", icon: Home },
@@ -220,8 +218,17 @@ export function Sidebar() {
   const { user, logout } = useAuth()
 
   const { data: recentPlans = [] } = useQuery({
-    queryKey: ["plans-list"],
+    queryKey: queryKeys.plans.list,
     queryFn: () => apiFetch("/api/plans/", PlansListSchema),
+    staleTime: 30_000,
+    refetchInterval: (query) => {
+      // Poll when any plan is generating
+      const data = query.state.data
+      if (data && data.some((p) => p.status === "generating")) {
+        return 3000
+      }
+      return false
+    },
   })
 
   const handleLogout = async () => {

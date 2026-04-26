@@ -25,6 +25,8 @@ import { cn } from "@/lib/utils"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Tooltip } from "@/components/ui/tooltip"
 import { PlansGridSkeleton, PageHeaderSkeleton } from "@/components/ui/skeleton"
+import { PlansListSchema, type PlanListItem } from "@/lib/schemas"
+import { queryKeys } from "@/lib/query-keys"
 import { 
   fadeInUp, 
   staggerContainer, 
@@ -33,25 +35,6 @@ import {
   hoverGlow,
   hoverLift
 } from "@/lib/motion"
-
-const PlanListItemSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  status: z.string(),
-  project: z.string(),
-  project_title: z.string(),
-  question_text: z.string().optional(),
-  executive_summary: z.string().optional(),
-  estimated_budget_min: z.number().nullable(),
-  estimated_budget_max: z.number().nullable(),
-  estimated_duration_weeks_min: z.number().nullable().optional(),
-  estimated_duration_weeks_max: z.number().nullable().optional(),
-  scientist_review_status: z.string(),
-  created_at: z.string(),
-  updated_at: z.string(),
-})
-
-const PlansListSchema = z.array(PlanListItemSchema)
 
 const statusConfig: Record<string, { color: string; icon: typeof CheckCircle; label: string; gradient: string }> = {
   draft: { 
@@ -416,8 +399,9 @@ export function PlansPage() {
   const navigate = useNavigate()
 
   const plansQuery = useQuery({
-    queryKey: ["plans-list"],
+    queryKey: queryKeys.plans.list,
     queryFn: () => apiFetch("/api/plans/", PlansListSchema),
+    staleTime: 30_000,
     refetchInterval: (query) => {
       const data = query.state.data
       if (data && data.some((p) => p.status === "generating")) {

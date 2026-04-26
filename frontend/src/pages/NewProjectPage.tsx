@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { AlertCircle } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { apiFetchRaw } from "@/lib/api"
+import { invalidatePatterns } from "@/lib/query-keys"
 
 type NewProjectForm = {
   title?: string
@@ -23,6 +24,7 @@ type NewProjectForm = {
 
 export function NewProjectPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const form = useForm<NewProjectForm>({
     defaultValues: {
       title: "New STRATA Project",
@@ -47,7 +49,11 @@ export function NewProjectPage() {
       })
       return project as { id: string }
     },
-    onSuccess: (project) => navigate(`/projects/${project.id}`),
+    onSuccess: (project) => {
+      // Invalidate projects list so it appears in sidebar/pages
+      queryClient.invalidateQueries({ queryKey: invalidatePatterns.projects.all })
+      navigate(`/projects/${project.id}`)
+    },
   })
 
   const hypothesis = form.watch("hypothesis") || ""

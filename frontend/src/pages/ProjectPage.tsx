@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { z } from "zod"
 import { FileText, Loader2, Plus, Clock, DollarSign } from "lucide-react"
@@ -7,27 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
-import { ExperimentPlanSchema, ProjectSchema } from "@/lib/schemas"
+import { ExperimentPlanSchema, ProjectSchema, PlansListSchema } from "@/lib/schemas"
+import { queryKeys, invalidatePatterns } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
 
 const StartQcSchema = z.object({ qc_run_id: z.string(), agent_run_id: z.string() })
-
-const PlanSchema = z.object({
-  id: z.union([z.string(), z.number()]).transform((val) => String(val)),
-  title: z.string(),
-  status: z.string(),
-  project: z.union([z.string(), z.number()]).transform((val) => String(val)),
-  executive_summary: z.string().optional(),
-  estimated_budget_min: z.union([z.number(), z.string()]).nullable().optional(),
-  estimated_budget_max: z.union([z.number(), z.string()]).nullable().optional(),
-  estimated_duration_weeks_min: z.number().nullable().optional(),
-  estimated_duration_weeks_max: z.number().nullable().optional(),
-  scientist_review_status: z.string(),
-  created_at: z.string(),
-  updated_at: z.string(),
-})
-
-const PlansListSchema = z.array(PlanSchema)
 
 const statusColors: Record<string, string> = {
   draft: "bg-gray-500",
@@ -66,16 +50,27 @@ export function ProjectPage() {
   const { projectId } = useParams()
   const navigate = useNavigate()
 
+  const queryClient = useQueryClient()
+
   const projectQuery = useQuery({
-    queryKey: ["project", projectId],
+    queryKey: queryKeys.projects.detail(projectId || ""),
     queryFn: () => apiFetch(`/api/projects/${projectId}/`, ProjectSchema),
     enabled: Boolean(projectId),
+    staleTime: 30_000,
   })
 
   const plansQuery = useQuery({
-    queryKey: ["plans-list"],
+    queryKey: queryKeys.plans.list,
     queryFn: () => apiFetch("/api/plans/", PlansListSchema),
     enabled: Boolean(projectId),
+    staleTime: 30_000,
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (data && data.some((p) => p.status === "generating")) {
+        return 3000
+      }
+      return false
+    },
   })
 
   const startQc = useMutation({
@@ -85,7 +80,11 @@ export function ProjectPage() {
       const payload = await apiFetchRaw(`/api/questions/${questionId}/literature-qc/`, { method: "POST" })
       return StartQcSchema.parse(payload)
     },
-    onSuccess: (data) => navigate(`/runs/${data.agent_run_id}?qcRunId=${data.qc_run_id}&projectId=${projectId}`),
+    onSuccess: (data) => {
+      // Invalidate plans list so new plan appears
+      queryClient.invalidateQueries({ queryKey: invalidatePatterns.plans.all })
+      navigate(`/runs/${data.agent_run_id}?qcRunId=${data.qc_run_id}&projectId=${projectId}`)
+    },
   })
 
   if (projectQuery.isLoading) return <p className="text-sm text-muted-foreground">Loading project...</p>

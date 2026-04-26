@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 
@@ -7,24 +7,38 @@ import { ReviewPanel } from "@/components/scientist/ReviewPanel"
 import { Button } from "@/components/ui/button"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ReviewSessionSchema } from "@/lib/schemas"
+import { queryKeys, invalidatePatterns } from "@/lib/query-keys"
 
 export function ReviewPage() {
   const { planId } = useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [reviewId, setReviewId] = useState<string | null>(null)
 
+  // Create review mutation (only runs once on mount)
   const createReview = useMutation({
     mutationFn: async () => {
       const payload = await apiFetchRaw(`/api/plans/${planId}/reviews/`, { method: "POST" })
       return ReviewSessionSchema.parse(payload)
     },
-    onSuccess: (review) => setReviewId(review.id),
+    onSuccess: (review) => {
+      setReviewId(review.id)
+      // Pre-populate the query cache with the created review
+      queryClient.setQueryData(queryKeys.reviews.detail(review.id), review)
+      // Invalidate reviews list so it appears in sidebar/pages
+      queryClient.invalidateQueries({ queryKey: invalidatePatterns.reviews.all })
+    },
   })
 
-  const reviewQuery = useMutation({
-    mutationFn: async (id: string) => apiFetch(`/api/reviews/${id}/`, ReviewSessionSchema),
+  // Fetch review data using proper query (not mutation) for caching
+  const reviewQuery = useQuery({
+    queryKey: queryKeys.reviews.detail(reviewId || ""),
+    queryFn: () => apiFetch(`/api/reviews/${reviewId}/`, ReviewSessionSchema),
+    enabled: Boolean(reviewId),
+    staleTime: 10_000,
   })
 
+  // Add annotation mutation with cache invalidation
   const addAnnotation = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
       if (!reviewId) throw new Error("Review not initialized")
@@ -32,12 +46,16 @@ export function ReviewPage() {
         method: "POST",
         body: JSON.stringify(payload),
       })
-      const updated = await apiFetch(`/api/reviews/${reviewId}/`, ReviewSessionSchema)
-      reviewQuery.reset()
-      reviewQuery.mutate(updated.id)
+    },
+    onSuccess: () => {
+      // Invalidate review detail to refetch with new annotations
+      if (reviewId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.reviews.detail(reviewId) })
+      }
     },
   })
 
+  // Complete review mutation
   const completeReview = useMutation({
     mutationFn: async () => {
       if (!reviewId) throw new Error("Review not initialized")
@@ -47,21 +65,21 @@ export function ReviewPage() {
       })
       return ReviewSessionSchema.parse(payload)
     },
-    onSuccess: () => navigate(`/plans/${planId}`),
+    onSuccess: () => {
+      // Invalidate reviews list and detail before navigating
+      queryClient.invalidateQueries({ queryKey: invalidatePatterns.reviews.all })
+      navigate(`/plans/${planId}`)
+    },
   })
 
+  // Auto-create review on mount
   useEffect(() => {
     if (!reviewId && !createReview.isPending && !createReview.isSuccess) {
       createReview.mutate()
     }
   }, [createReview, reviewId])
 
-  useEffect(() => {
-    if (reviewId) {
-      reviewQuery.mutate(reviewId)
-    }
-  }, [reviewId, reviewQuery])
-
+  // Use either the created review data or the fetched review data
   const review = createReview.data ?? reviewQuery.data
 
   return (

@@ -22,6 +22,12 @@ import { apiFetch } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { EmptyState } from "@/components/ui/empty-state"
 import { 
+  ProjectsListSchema,
+  PlansListSchema,
+  ReviewsListSchema,
+} from "@/lib/schemas"
+import { queryKeys } from "@/lib/query-keys"
+import { 
   fadeInUp, 
   staggerContainer, 
   staggerItem,
@@ -46,41 +52,6 @@ import {
   Line,
   Legend
 } from "recharts"
-
-const ProjectSchema = z.object({
-  id: z.union([z.string(), z.number()]),
-  title: z.string(),
-  domain: z.string().nullable().optional(),
-  created_at: z.string(),
-})
-
-const ProjectsListSchema = z.array(ProjectSchema)
-
-const PlanSchema = z.object({
-  id: z.union([z.string(), z.number()]),
-  title: z.string(),
-  status: z.string(),
-  estimated_budget_min: z.union([z.number(), z.string()]).nullable().optional(),
-  estimated_budget_max: z.union([z.number(), z.string()]).nullable().optional(),
-  estimated_duration_weeks_min: z.number().nullable().optional(),
-  estimated_duration_weeks_max: z.number().nullable().optional(),
-  scientist_review_status: z.string(),
-  created_at: z.string(),
-  project: z.union([z.string(), z.number()]).optional(),
-})
-
-const PlansListSchema = z.array(PlanSchema)
-
-const ReviewSchema = z.object({
-  id: z.union([z.string(), z.number()]),
-  status: z.string(),
-  overall_rating: z.number().nullable().optional(),
-  annotation_count: z.number(),
-  completed_at: z.string().nullable().optional(),
-  created_at: z.string(),
-})
-
-const ReviewsListSchema = z.array(ReviewSchema)
 
 // Color palette for charts
 const COLORS = {
@@ -239,19 +210,23 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 }
 
 export function AnalyticsPage() {
+  // Use shared cache keys so data is already available when navigating from other pages
   const projectsQuery = useQuery({
-    queryKey: ["projects-analytics"],
+    queryKey: queryKeys.projects.list,
     queryFn: () => apiFetch("/api/projects/", ProjectsListSchema),
+    staleTime: 60_000,
   })
 
   const plansQuery = useQuery({
-    queryKey: ["plans-analytics"],
+    queryKey: queryKeys.plans.list,
     queryFn: () => apiFetch("/api/plans/", PlansListSchema),
+    staleTime: 60_000,
   })
 
   const reviewsQuery = useQuery({
-    queryKey: ["reviews-analytics"],
+    queryKey: queryKeys.reviews.list,
     queryFn: () => apiFetch("/api/reviews/", ReviewsListSchema),
+    staleTime: 60_000,
   })
 
   const projects = projectsQuery.data ?? []

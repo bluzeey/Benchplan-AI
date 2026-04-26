@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { AgentRunSchema, ExperimentPlanSchema, LiteratureQcRunSchema } from "@/lib/schemas"
+import { queryKeys, invalidatePatterns } from "@/lib/query-keys"
 
 const GeneratePlanResponseSchema = z.object({ agent_run_id: z.string(), plan_id: z.string() })
 
@@ -22,24 +23,27 @@ export function RunPage() {
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null)
 
   const runQuery = useQuery({
-    queryKey: ["agent-run", runId],
+    queryKey: queryKeys.agentRuns.detail(runId || ""),
     queryFn: () => apiFetch(`/api/agent-runs/${runId}/`, AgentRunSchema),
     enabled: Boolean(runId),
+    staleTime: 5000,
     refetchInterval: (query) => (query.state.data?.status === "running" ? 2000 : false),
   })
 
   const qcQuery = useQuery({
-    queryKey: ["qc-run", qcRunId],
+    queryKey: queryKeys.qcRuns.detail(qcRunId),
     queryFn: () => apiFetch(`/api/literature-qc/${qcRunId}/`, LiteratureQcRunSchema),
     enabled: Boolean(qcRunId),
+    staleTime: 5000,
     refetchInterval: (query) => (query.state.data?.status === "running" ? 2000 : false),
   })
 
   // Fetch the current plan if we have a plan_id
   const planQuery = useQuery({
-    queryKey: ["plan", currentPlanId],
+    queryKey: queryKeys.plans.detail(currentPlanId || ""),
     queryFn: () => apiFetch(`/api/plans/${currentPlanId}/`, ExperimentPlanSchema),
     enabled: Boolean(currentPlanId),
+    staleTime: 5000,
     refetchInterval: (query) => {
       const status = query.state.data?.status
       return status === "generating" ? 3000 : false
@@ -53,8 +57,8 @@ export function RunPage() {
     },
     onSuccess: (payload) => {
       setCurrentPlanId(payload.plan_id)
-      // Invalidate plans list so sidebar updates
-      queryClient.invalidateQueries({ queryKey: ["plans-list"] })
+      // Invalidate plans list so sidebar and other pages update
+      queryClient.invalidateQueries({ queryKey: invalidatePatterns.plans.all })
       // Navigate to the new run while preserving context
       navigate(`/runs/${payload.agent_run_id}?qcRunId=${qcRunId}`)
     },
@@ -65,9 +69,9 @@ export function RunPage() {
     if (runQuery.data?.status === "completed" && runQuery.data.output_payload.plan_id) {
       const planId = runQuery.data.output_payload.plan_id as string
       setCurrentPlanId(planId)
-      // Invalidate plan queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["plan", planId] })
-      queryClient.invalidateQueries({ queryKey: ["plans-list"] })
+      // Invalidate plan queries to refresh data across all pages
+      queryClient.invalidateQueries({ queryKey: queryKeys.plans.detail(planId) })
+      queryClient.invalidateQueries({ queryKey: invalidatePatterns.plans.all })
     }
   }, [runQuery.data, queryClient])
 
