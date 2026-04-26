@@ -107,14 +107,14 @@ function formatRelativeTime(dateString: string): string {
 }
 
 // Budget visualization bar
-function BudgetBar({ 
-  min, 
-  max, 
-  className 
-}: { 
-  min: number | null | undefined
-  max: number | null | undefined
-  className?: string 
+function BudgetBar({
+  min,
+  max,
+  className
+}: {
+  min: number | string | null | undefined
+  max: number | string | null | undefined
+  className?: string
 }) {
   const minVal = min ? (typeof min === "string" ? parseFloat(min) : min) : 0
   const maxVal = max ? (typeof max === "string" ? parseFloat(max) : max) : minVal * 1.5 || 50000
@@ -179,20 +179,20 @@ function DurationBar({
 }
 
 // Animated Plan Card
-function PlanCard({ 
-  plan, 
-  index 
-}: { 
+function PlanCard({
+  plan,
+  index
+}: {
   plan: {
     id: string
     title: string
     status: string
-    project: string
+    project: string | number
     project_title: string
     question_text?: string
     executive_summary?: string
-    estimated_budget_min?: number | null
-    estimated_budget_max?: number | null
+    estimated_budget_min?: number | string | null
+    estimated_budget_max?: number | string | null
     estimated_duration_weeks_min?: number | null
     estimated_duration_weeks_max?: number | null
     scientist_review_status: string

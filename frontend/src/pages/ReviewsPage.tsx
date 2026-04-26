@@ -70,7 +70,7 @@ function ReviewCard({
 }: {
   review: {
     id: string
-    plan: string
+    plan: string | number
     plan_title: string
     project_title: string
     status: string
