@@ -166,3 +166,10 @@ X_FRAME_OPTIONS = "DENY"
 
 # Health check endpoint (used by Railway)
 HEALTH_CHECK_URL = "/api/health/"
+
+# Cloudflare R2 Configuration
+R2_ENDPOINT = os.getenv("R2_ENDPOINT", "")
+R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY", "")
+R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "")
+R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL", "")

@@ -25,8 +25,8 @@ function ProtectedLayout() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[hsl(222,47%,7%)]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[hsl(199,89%,48%)] border-t-transparent" />
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     )
   }

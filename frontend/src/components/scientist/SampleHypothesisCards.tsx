@@ -68,7 +68,7 @@ export function SampleHypothesisCards({ samples, onSelect, className }: Props) {
             key={index}
             type="button"
             onClick={() => onSelect(sample.hypothesis)}
-            className="group flex items-start gap-3 rounded-xl border border-[hsl(217,33%,18%)] bg-[hsl(222,47%,9%)] p-4 text-left transition-all hover:border-[hsl(217,33%,25%)] hover:bg-[hsl(222,47%,11%)]"
+            className="group flex items-start gap-3 rounded-xl border border-border bg-card/80 p-4 text-left transition-all hover:bg-card hover:border-border/80"
           >
             <div
               className={cn(
@@ -80,7 +80,7 @@ export function SampleHypothesisCards({ samples, onSelect, className }: Props) {
             >
               {icons[sample.icon]}
             </div>
-            <span className="text-sm font-medium leading-snug text-white group-hover:text-[hsl(210,40%,98%)]">
+            <span className="text-sm font-medium leading-snug text-foreground">
               {sample.title}
             </span>
           </button>

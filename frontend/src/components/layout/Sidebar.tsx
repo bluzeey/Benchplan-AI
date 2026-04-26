@@ -94,7 +94,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex h-screen flex-col border-r border-[hsl(217,33%,18%)] bg-[hsl(222,47%,7%)] transition-all duration-300",
+        "flex h-screen flex-col border-r border-border bg-background transition-all duration-300",
         collapsed ? "w-16" : "w-64"
       )}
     >
@@ -131,13 +131,13 @@ export function Sidebar() {
                 />
               </svg>
             </div>
-            <span className="font-semibold text-white">BenchPlan AI</span>
+            <span className="font-semibold text-foreground">BenchPlan AI</span>
           </div>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-md text-[hsl(215,20%,55%)] transition-colors hover:bg-[hsl(217,33%,14%)] hover:text-white",
+            "flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
             collapsed && "mx-auto"
           )}
         >
@@ -160,8 +160,8 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
                 active
-                  ? "bg-[hsl(217,33%,14%)] text-white"
-                  : "text-[hsl(215,20%,55%)] hover:bg-[hsl(217,33%,12%)] hover:text-white",
+                  ? "bg-accent text-foreground font-medium"
+                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
                 collapsed && "justify-center px-2"
               )}
             >
@@ -174,7 +174,7 @@ export function Sidebar() {
         {/* Recent Plans */}
         {!collapsed && (
           <div className="mt-6">
-            <div className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-[hsl(215,20%,45%)]">
+            <div className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
               Recent Plans
             </div>
             <div className="space-y-1">
@@ -185,14 +185,14 @@ export function Sidebar() {
                   <button
                     key={project.id}
                     onClick={() => navigate(`/projects/${project.id}`)}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-[hsl(217,33%,12%)]"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent/60"
                   >
-                    <div className={cn("flex h-8 w-8 items-center justify-center rounded-md bg-[hsl(217,33%,14%)]", colorClass)}>
+                    <div className={cn("flex h-8 w-8 items-center justify-center rounded-md bg-muted", colorClass)}>
                       <Icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-white">{project.title}</p>
-                      <p className="text-xs text-[hsl(215,20%,45%)]">
+                      <p className="truncate font-medium text-foreground">{project.title}</p>
+                      <p className="text-xs text-muted-foreground">
                         {project.domain || "Other"} • {project.updated_at ? formatRelativeTime(project.updated_at) : "recent"}
                       </p>
                     </div>
@@ -205,23 +205,23 @@ export function Sidebar() {
       </nav>
 
       {/* Footer - User */}
-      <div className="border-t border-[hsl(217,33%,18%)] p-3">
+      <div className="border-t border-border p-3">
         <button
           onClick={handleLogout}
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-[hsl(217,33%,14%)]",
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
             collapsed && "justify-center px-2"
           )}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(199,89%,48%)] text-sm font-medium text-white">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
             {userInitials}
           </div>
           {!collapsed && (
             <div className="flex min-w-0 flex-1 items-center justify-between">
-              <span className="truncate font-medium text-white">
+              <span className="truncate font-medium text-foreground">
                 {user?.full_name || "User"}
               </span>
-              <LogOut className="h-4 w-4 text-[hsl(215,20%,45%)]" />
+              <LogOut className="h-4 w-4 text-muted-foreground" />
             </div>
           )}
         </button>

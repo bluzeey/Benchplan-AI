@@ -1,8 +1,9 @@
+import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { z } from "zod"
 
-import { HypothesisInput } from "@/components/scientist/HypothesisInput"
+import { HypothesisInput, type Attachment } from "@/components/scientist/HypothesisInput"
 import { SampleHypothesisCards } from "@/components/scientist/SampleHypothesisCards"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ProjectSchema } from "@/lib/schemas"
@@ -43,9 +44,10 @@ const samples = [
 
 export function LandingPage() {
   const navigate = useNavigate()
+  const [draftHypothesis, setDraftHypothesis] = useState("")
 
   const createProject = useMutation({
-    mutationFn: async (hypothesis: string) => {
+    mutationFn: async ({ hypothesis, attachments }: { hypothesis: string; attachments: Attachment[] }) => {
       const project = await apiFetch(
         "/api/projects/",
         ProjectSchema,
@@ -57,6 +59,13 @@ export function LandingPage() {
             domain: "other",
             currency: "USD",
             lab_type: "academic",
+            attachments: attachments.map((a) => ({
+              name: a.name,
+              url: a.url,
+              type: a.type,
+              size: a.size,
+              object_key: a.objectKey,
+            })),
           }),
         }
       )
@@ -81,26 +90,30 @@ export function LandingPage() {
     },
   })
 
+  const handleSampleSelect = (hypothesis: string) => {
+    setDraftHypothesis(hypothesis)
+  }
+
   return (
-    <div className="flex min-h-screen flex-col bg-[hsl(222,47%,7%)]">
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
-      <header className="flex h-16 items-center justify-between border-b border-[hsl(217,33%,18%)] px-8">
+      <header className="flex h-16 items-center justify-between border-b border-border px-8">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-purple-500">
             <FlaskConical className="h-5 w-5 text-white" />
           </div>
-          <span className="text-lg font-semibold text-white">BenchPlan AI</span>
+          <span className="text-lg font-semibold text-foreground">BenchPlan AI</span>
         </div>
         <div className="flex items-center gap-4">
           <Link
             to="/login"
-            className="text-sm font-medium text-[hsl(215,20%,55%)] transition-colors hover:text-white"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Sign in
           </Link>
           <Link
             to="/signup"
-            className="rounded-lg bg-[hsl(199,89%,48%)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[hsl(199,89%,43%)]"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
           >
             Get Started
           </Link>
@@ -110,10 +123,10 @@ export function LandingPage() {
       {/* Main content - simple chat bar only */}
       <main className="flex flex-1 flex-col items-center justify-center px-4">
         <div className="mb-8 flex flex-col items-center">
-          <h1 className="text-3xl font-semibold text-white sm:text-4xl">
+          <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">
             How can I help design your next experiment?
           </h1>
-          <p className="mt-3 max-w-2xl text-center text-[hsl(215,20%,55%)]">
+          <p className="mt-3 max-w-2xl text-center text-muted-foreground">
             Enter a hypothesis, and BenchPlan will run literature quality checks, 
             identify novelty signals, and draft a structured experiment plan with references, budget, and timeline.
           </p>
@@ -121,8 +134,10 @@ export function LandingPage() {
 
         <div className="w-full max-w-3xl">
           <HypothesisInput
-            onSubmit={async (hypothesis) => {
-              await createProject.mutateAsync(hypothesis)
+            value={draftHypothesis}
+            onChange={setDraftHypothesis}
+            onSubmit={async (hypothesis, attachments) => {
+              await createProject.mutateAsync({ hypothesis, attachments })
             }}
             isSubmitting={createProject.isPending}
           />
@@ -130,7 +145,7 @@ export function LandingPage() {
 
         {/* Error message */}
         {createProject.error && (
-          <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <div className="mt-4 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {createProject.error instanceof Error
               ? createProject.error.message
               : "Failed to create project"}
@@ -139,19 +154,19 @@ export function LandingPage() {
 
         {/* Sample hypotheses */}
         <div className="mt-8 w-full max-w-5xl">
-          <p className="mb-4 text-center text-sm text-[hsl(215,20%,55%)]">
+          <p className="mb-4 text-center text-sm text-muted-foreground">
             Try a sample hypothesis
           </p>
           <SampleHypothesisCards
             samples={samples}
-            onSelect={(hypothesis) => createProject.mutate(hypothesis)}
+            onSelect={handleSampleSelect}
           />
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[hsl(217,33%,18%)] px-8 py-4">
-        <div className="flex items-center justify-center gap-2 text-xs text-[hsl(215,20%,45%)]">
+      <footer className="border-t border-border px-8 py-4">
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
           <span>API Online</span>
           <span className="mx-2">•</span>

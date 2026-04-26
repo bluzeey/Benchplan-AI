@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useMutation } from "@tanstack/react-query"
 import { z } from "zod"
 
-import { HypothesisInput } from "@/components/scientist/HypothesisInput"
+import { HypothesisInput, type Attachment } from "@/components/scientist/HypothesisInput"
 import { SampleHypothesisCards } from "@/components/scientist/SampleHypothesisCards"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
@@ -46,9 +46,10 @@ const samples: Sample[] = [
 export function DashboardPage() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
+  const [draftHypothesis, setDraftHypothesis] = useState("")
 
   const createProject = useMutation({
-    mutationFn: async (hypothesis: string) => {
+    mutationFn: async ({ hypothesis, attachments }: { hypothesis: string; attachments: Attachment[] }) => {
       const project = await apiFetch(
         "/api/projects/",
         ProjectSchema,
@@ -60,6 +61,13 @@ export function DashboardPage() {
             domain: "other",
             currency: "USD",
             lab_type: "academic",
+            attachments: attachments.map((a) => ({
+              name: a.name,
+              url: a.url,
+              type: a.type,
+              size: a.size,
+              object_key: a.objectKey,
+            })),
           }),
         }
       )
@@ -86,6 +94,10 @@ export function DashboardPage() {
       setError(err instanceof Error ? err.message : "Failed to create project")
     },
   })
+
+  const handleSampleSelect = (hypothesis: string) => {
+    setDraftHypothesis(hypothesis)
+  }
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -158,8 +170,10 @@ export function DashboardPage() {
         {/* Input area */}
         <div className="mt-10 w-full max-w-3xl">
           <HypothesisInput
-            onSubmit={async (hypothesis) => {
-              await createProject.mutateAsync(hypothesis)
+            value={draftHypothesis}
+            onChange={setDraftHypothesis}
+            onSubmit={async (hypothesis, attachments) => {
+              await createProject.mutateAsync({ hypothesis, attachments })
             }}
             isSubmitting={createProject.isPending}
           />
@@ -179,7 +193,7 @@ export function DashboardPage() {
           </p>
           <SampleHypothesisCards
             samples={samples}
-            onSelect={(hypothesis) => createProject.mutate(hypothesis)}
+            onSelect={handleSampleSelect}
           />
         </div>
       </main>

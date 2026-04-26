@@ -11,7 +11,7 @@ export function AppShell({ children }: Props) {
   const isDashboard = location.pathname === "/dashboard"
 
   return (
-    <div className="flex min-h-screen bg-[hsl(222,47%,7%)]">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
       <main className="flex min-w-0 flex-1 flex-col">
         {!isDashboard && <Topbar />}
