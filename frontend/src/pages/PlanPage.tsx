@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link, useParams } from "react-router-dom"
 import { z } from "zod"
-import React from "react"
+import React, { useEffect, useRef, useState, useCallback } from "react"
 
 import { BudgetTable } from "@/components/scientist/BudgetTable"
 import { MaterialsTable } from "@/components/scientist/MaterialsTable"
@@ -14,10 +14,11 @@ import { ValidationPanel } from "@/components/scientist/ValidationPanel"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { BudgetLineSchema, ExperimentPlanSchema, MaterialSchema, TimelinePhaseSchema } from "@/lib/schemas"
 import { queryKeys } from "@/lib/query-keys"
 import type { PlanSection } from "@/lib/schemas"
+import { PlanPageSkeleton } from "@/components/ui/skeleton"
 
 // Check if content looks like raw code (dict string)
 function isRawCode(content: string): boolean {
@@ -182,6 +183,8 @@ function formatSectionContent(section: {
 
 export function PlanPage() {
   const { planId } = useParams()
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
 
   const planQuery = useQuery({
     queryKey: queryKeys.plans.detail(planId || ""),
@@ -212,7 +215,68 @@ export function PlanPage() {
     staleTime: 60_000,
   })
 
-  if (planQuery.isLoading) return <p className="text-sm text-muted-foreground">Loading plan...</p>
+  // IntersectionObserver to track active section
+  useEffect(() => {
+    if (!planQuery.data?.sections?.length || !scrollContainerRef.current) return
+
+    const container = scrollContainerRef.current
+    const sectionElements: HTMLElement[] = []
+
+    // Find all section elements
+    planQuery.data.sections.forEach((section) => {
+      const element = document.getElementById(`section-${section.id}`)
+      if (element) sectionElements.push(element)
+    })
+
+    if (sectionElements.length === 0) return
+
+    // Set initial active section
+    setActiveSectionId(planQuery.data.sections[0].id)
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the entry that is most visible (largest intersection ratio)
+        let maxRatio = 0
+        let activeId: string | null = null
+
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio > maxRatio) {
+            maxRatio = entry.intersectionRatio
+            activeId = entry.target.id.replace("section-", "")
+          }
+        })
+
+        if (activeId) {
+          setActiveSectionId(activeId)
+        }
+      },
+      {
+        root: container,
+        rootMargin: "-20% 0px -60% 0px", // Trigger when section is in top 40% of viewport
+        threshold: [0, 0.25, 0.5, 0.75, 1],
+      }
+    )
+
+    sectionElements.forEach((el) => observer.observe(el))
+
+    return () => observer.disconnect()
+  }, [planQuery.data?.sections])
+
+  const handleSectionClick = useCallback((sectionId: string) => {
+    const element = document.getElementById(`section-${sectionId}`)
+    if (element && scrollContainerRef.current) {
+      // Smooth scroll within the container
+      const container = scrollContainerRef.current
+      const elementTop = element.offsetTop - container.offsetTop - 20 // 20px padding
+      container.scrollTo({
+        top: elementTop,
+        behavior: "smooth",
+      })
+    }
+    setActiveSectionId(sectionId)
+  }, [])
+
+  if (planQuery.isLoading) return <PlanPageSkeleton />
   if (planQuery.error) return <p className="text-sm text-destructive">{(planQuery.error as Error).message}</p>
   if (!planQuery.data) return null
 
@@ -220,7 +284,11 @@ export function PlanPage() {
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:h-[calc(100vh-4rem)] lg:min-h-0">
-      <PlanSectionNav sections={plan.sections ?? []} />
+      <PlanSectionNav
+        sections={plan.sections ?? []}
+        activeSectionId={activeSectionId}
+        onSectionClick={handleSectionClick}
+      />
       <section className="flex flex-col lg:min-h-0">
         {/* Header - Stays visible */}
         <div className="space-y-4 shrink-0">
@@ -241,7 +309,10 @@ export function PlanPage() {
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 lg:min-h-0 lg:overflow-y-auto custom-scrollbar lg:pr-2 mt-4">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 lg:min-h-0 lg:overflow-y-auto custom-scrollbar lg:pr-2 mt-4"
+        >
           <div className="space-y-4 pb-4">
             <Card className="rounded-2xl border-border/70">
               <CardHeader>

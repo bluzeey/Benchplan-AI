@@ -1,8 +1,27 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import type { PlanSection } from "@/lib/schemas"
 
-export function PlanSectionNav({ sections }: { sections: Pick<PlanSection, "id" | "title">[] }) {
+interface PlanSectionNavProps {
+  sections: Pick<PlanSection, "id" | "title">[]
+  activeSectionId?: string | null
+  onSectionClick?: (sectionId: string) => void
+}
+
+export function PlanSectionNav({ sections, activeSectionId, onSectionClick }: PlanSectionNavProps) {
+  const handleClick = (sectionId: string) => {
+    if (onSectionClick) {
+      onSectionClick(sectionId)
+    } else {
+      // Fallback to default hash navigation
+      const element = document.getElementById(`section-${sectionId}`)
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" })
+      }
+    }
+  }
+
   return (
     <Card className="sticky top-0 self-start hidden h-[calc(100vh-4rem)] overflow-y-auto rounded-2xl lg:block">
       <CardHeader className="pb-3 shrink-0">
@@ -11,13 +30,24 @@ export function PlanSectionNav({ sections }: { sections: Pick<PlanSection, "id" 
       </CardHeader>
       <CardContent className="space-y-2">
         {sections.length === 0 ? <p className="font-mono text-xs text-muted-foreground">No structured sections found</p> : null}
-        {sections.map((section, index) => (
-          <Button key={section.id} asChild variant="outline" className="h-auto w-full justify-start rounded-xl px-3 py-2 text-left text-xs">
-            <a href={`#section-${section.id}`}>
+        {sections.map((section, index) => {
+          const isActive = activeSectionId === section.id
+          return (
+            <Button
+              key={section.id}
+              variant={isActive ? "default" : "outline"}
+              onClick={() => handleClick(section.id)}
+              className={cn(
+                "h-auto w-full justify-start rounded-xl px-3 py-2 text-left text-xs transition-all duration-200",
+                isActive
+                  ? "bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-cyan-500/20 border-transparent"
+                  : "hover:bg-accent/50 hover:border-cyan-500/30"
+              )}
+            >
               {String(index + 1).padStart(2, "0")} - {section.title}
-            </a>
-          </Button>
-        ))}
+            </Button>
+          )
+        })}
       </CardContent>
     </Card>
   )

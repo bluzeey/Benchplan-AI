@@ -267,3 +267,101 @@ export function ActivityTimelineSkeleton({ count = 5 }: { count?: number }) {
     </div>
   )
 }
+
+// Plan page skeleton - 2 column layout with fixed sidebar and scrollable content
+export function PlanPageSkeleton() {
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:h-[calc(100vh-4rem)] lg:min-h-0">
+      {/* Left sidebar skeleton */}
+      <div className="hidden lg:block h-[calc(100vh-4rem)]">
+        <div className="h-full rounded-2xl border border-border/60 bg-card/50 p-4 space-y-4">
+          <div className="space-y-2">
+            <Skeleton width={100} height={20} rounded="sm" />
+            <Skeleton width={140} height={14} rounded="sm" />
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} width="100%" height={36} rounded="xl" />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right content skeleton */}
+      <div className="flex flex-col lg:min-h-0 space-y-4">
+        {/* Header area */}
+        <div className="space-y-4 shrink-0">
+          <Skeleton width="60%" height={36} rounded="sm" />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-border/60 bg-card/50 p-4 space-y-2">
+                <Skeleton width={80} height={12} rounded="sm" />
+                <Skeleton width="70%" height={20} rounded="sm" />
+                <Skeleton width={60} height={12} rounded="sm" />
+              </div>
+            ))}
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-card/50 p-4 space-y-3">
+            <Skeleton width={140} height={24} rounded="sm" />
+            <Skeleton width="100%" height={60} rounded="md" />
+            <div className="flex gap-2 pt-2 border-t border-border/40">
+              <Skeleton width={120} height={16} rounded="sm" />
+              <Skeleton width={100} height={16} rounded="sm" />
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable content area */}
+        <div className="flex-1 lg:min-h-0 space-y-4 pb-4">
+          {/* Protocol card */}
+          <div className="rounded-2xl border border-border/60 bg-card/50 p-4 space-y-3">
+            <Skeleton width={80} height={24} rounded="sm" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-border/40 bg-background/60 p-4 space-y-2">
+                <Skeleton width="40%" height={18} rounded="sm" />
+                <Skeleton width="100%" height={40} rounded="md" />
+                <div className="flex gap-4">
+                  <Skeleton width={80} height={14} rounded="sm" />
+                  <Skeleton width={100} height={14} rounded="sm" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Generated sections card */}
+          <div className="rounded-2xl border border-border/60 bg-card/50 p-4 space-y-4">
+            <Skeleton width={140} height={24} rounded="sm" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-border/40 bg-background/60 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton width="30%" height={18} rounded="sm" />
+                  <Skeleton width={80} height={20} rounded="full" />
+                </div>
+                <Skeleton width="100%" height={80} rounded="md" />
+                <div className="flex gap-2 pt-2 border-t border-border/40">
+                  <Skeleton width={60} height={12} rounded="sm" />
+                  <Skeleton width={100} height={12} rounded="sm" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Materials, Budget, Timeline placeholder cards */}
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-border/60 bg-card/50 p-4 space-y-3">
+              <Skeleton width={100} height={24} rounded="sm" />
+              <Skeleton width="100%" height={120} rounded="md" />
+            </div>
+          ))}
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} width={140} height={36} rounded="full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
