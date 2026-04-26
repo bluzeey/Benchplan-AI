@@ -28,7 +28,7 @@ function formatSectionContent(section: {
   key: string
   title: string
   content_markdown: string
-  content_json: Record<string, unknown>
+  content_json: Record<string, unknown> | undefined
   needs_review: boolean
 }): string {
   // If markdown is already properly formatted (not raw code), use it
@@ -50,25 +50,29 @@ function formatSectionContent(section: {
 
     case "novelty_qc":
       if (data.signal) {
-        lines.push(`**Novelty Signal:** ${data.signal.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}`)
+        const signalStr = String(data.signal).replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+        lines.push(`**Novelty Signal:** ${signalStr}`)
       }
       if (data.summary) {
-        lines.push("", data.summary)
+        lines.push("", String(data.summary))
       }
-      if (data.key_references?.length) {
-        lines.push("", `**References:** ${data.key_references.length} sources identified`)
+      const keyRefs = data.key_references as Array<unknown> | undefined
+      if (keyRefs?.length) {
+        lines.push("", `**References:** ${keyRefs.length} sources identified`)
       }
       break
 
     case "protocol":
-      if (data.steps?.length) {
-        lines.push(`**Protocol Overview:** ${data.steps.length} step(s)`)
-        data.steps.forEach((step: Record<string, unknown>, i: number) => {
+      const steps = data.steps as Array<Record<string, unknown>> | undefined
+      if (steps?.length) {
+        lines.push(`**Protocol Overview:** ${steps.length} step(s)`)
+        steps.forEach((step, i) => {
           lines.push("", `**${i + 1}. ${step.title}**`)
-          if (step.description) lines.push(step.description as string)
+          if (step.description) lines.push(String(step.description))
           if (step.duration_minutes) {
-            const hrs = Math.floor((step.duration_minutes as number) / 60)
-            const mins = (step.duration_minutes as number) % 60
+            const duration = Number(step.duration_minutes)
+            const hrs = Math.floor(duration / 60)
+            const mins = duration % 60
             lines.push(hrs > 0 ? `*Duration: ${hrs}h ${mins}m*` : `*Duration: ${mins} minutes*`)
           }
         })
@@ -76,9 +80,10 @@ function formatSectionContent(section: {
       break
 
     case "materials":
-      if (data.items?.length) {
-        lines.push(`**Materials:** ${data.items.length} item(s) required`)
-        data.items.forEach((item: Record<string, unknown>) => {
+      const items = data.items as Array<Record<string, unknown>> | undefined
+      if (items?.length) {
+        lines.push(`**Materials:** ${items.length} item(s) required`)
+        items.forEach((item) => {
           lines.push("", `- **${item.name}**`)
           if (item.role) lines.push(`  - Role: ${item.role}`)
           if (item.quantity) lines.push(`  - Quantity: ${item.quantity}`)
@@ -88,21 +93,24 @@ function formatSectionContent(section: {
       break
 
     case "budget":
-      if (data.lines?.length) {
-        const total = data.lines.reduce((sum: number, line: Record<string, unknown>) => sum + (Number(line.total_cost) || 0), 0)
+      const budgetLines = data.lines as Array<Record<string, unknown>> | undefined
+      if (budgetLines?.length) {
+        const total = budgetLines.reduce((sum, line) => sum + (Number(line.total_cost) || 0), 0)
         lines.push(`**Budget Summary:** $${total.toLocaleString()} total`)
-        data.lines.forEach((line: Record<string, unknown>) => {
-          lines.push("", `- **${(line.category as string)?.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}** — ${line.label}: $${Number(line.total_cost).toLocaleString()}`)
+        budgetLines.forEach((line) => {
+          const category = String(line.category || "").replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+          lines.push("", `- **${category}** — ${line.label}: $${Number(line.total_cost).toLocaleString()}`)
           if (line.assumptions) lines.push(`  - *${line.assumptions}*`)
         })
       }
       break
 
     case "timeline":
-      if (data.phases?.length) {
-        const lastPhase = data.phases[data.phases.length - 1]
-        lines.push(`**Timeline:** ${data.phases.length} phase(s), ${lastPhase?.end_week || "?"} weeks total`)
-        data.phases.forEach((phase: Record<string, unknown>) => {
+      const phases = data.phases as Array<Record<string, unknown>> | undefined
+      if (phases?.length) {
+        const lastPhase = phases[phases.length - 1]
+        lines.push(`**Timeline:** ${phases.length} phase(s), ${lastPhase?.end_week || "?"} weeks total`)
+        phases.forEach((phase) => {
           lines.push("", `- **Week ${phase.start_week}-${phase.end_week}:** ${phase.title}`)
           if (phase.parallelizable) lines.push("  - *Can run in parallel*")
           if (phase.risk_of_delay) lines.push(`  - Risk: ${phase.risk_of_delay}`)
@@ -113,20 +121,23 @@ function formatSectionContent(section: {
 
     case "validation":
       if (data.primary_endpoint) lines.push(`**Primary Endpoint:** ${data.primary_endpoint}`)
-      if (data.secondary_endpoints?.length) {
-        lines.push("", `**Secondary Endpoints:** ${(data.secondary_endpoints as string[]).join(", ")}`)
+      const secondaryEndpoints = data.secondary_endpoints as string[] | undefined
+      if (secondaryEndpoints?.length) {
+        lines.push("", `**Secondary Endpoints:** ${secondaryEndpoints.join(", ")}`)
       }
-      if (data.success_criteria?.length) {
+      const successCriteria = data.success_criteria as string[] | undefined
+      if (successCriteria?.length) {
         lines.push("", "**Success Criteria:**")
-        ;(data.success_criteria as string[]).forEach((c: string) => lines.push(`- ${c}`))
+        successCriteria.forEach((c) => lines.push(`- ${c}`))
       }
       break
 
     case "risks_safety":
       if (data.warning) lines.push(`> ⚠️ **Safety Notice:** ${data.warning}`, "")
-      if (data.risks?.length) {
-        lines.push(`**Risk Assessment:** ${(data.risks as Array<Record<string, unknown>>).length} category(s)`)
-        ;(data.risks as Array<Record<string, unknown>>).forEach((risk) => {
+      const risks = data.risks as Array<Record<string, unknown>> | undefined
+      if (risks?.length) {
+        lines.push(`**Risk Assessment:** ${risks.length} category(s)`)
+        risks.forEach((risk) => {
           lines.push("", `- **${risk.category}** — Risk Level: ${risk.state}`)
           const approvals = risk.required_approvals as string[] | undefined
           if (approvals?.length) {
@@ -137,21 +148,23 @@ function formatSectionContent(section: {
       break
 
     case "assumptions":
-      if (data.assumptions?.length) {
-        lines.push(`**Key Assumptions:** ${data.assumptions.length} item(s)`)
-        ;(data.assumptions as string[]).forEach((a: string) => lines.push(`- ${a}`))
+      const assumptions = data.assumptions as string[] | undefined
+      if (assumptions?.length) {
+        lines.push(`**Key Assumptions:** ${assumptions.length} item(s)`)
+        assumptions.forEach((a) => lines.push(`- ${a}`))
       }
       break
 
     case "references":
-      if (data.references?.length) {
-        lines.push(`**Literature Sources:** ${data.references.length} reference(s)`)
-        ;(data.references as Array<Record<string, unknown>>).slice(0, 5).forEach((ref) => {
+      const refs = data.references as Array<Record<string, unknown>> | undefined
+      if (refs?.length) {
+        lines.push(`**Literature Sources:** ${refs.length} reference(s)`)
+        refs.slice(0, 5).forEach((ref) => {
           lines.push("", `- **${ref.title}**`)
-          if (ref.source && ref.year) lines.push(`  - ${(ref.source as string).toUpperCase()}, ${ref.year}`)
-          if (ref.relevance_score) lines.push(`  - Relevance: ${Math.round((ref.relevance_score as number) * 100)}%`)
+          if (ref.source && ref.year) lines.push(`  - ${String(ref.source).toUpperCase()}, ${ref.year}`)
+          if (ref.relevance_score) lines.push(`  - Relevance: ${Math.round(Number(ref.relevance_score) * 100)}%`)
         })
-        if (data.references.length > 5) lines.push(`\n*... and ${data.references.length - 5} more references*`)
+        if (refs.length > 5) lines.push(`\n*... and ${refs.length - 5} more references*`)
       }
       break
 
@@ -231,7 +244,13 @@ export function PlanPage() {
             </CardHeader>
             <CardContent className="space-y-4">
             {(plan.sections ?? []).map((section) => {
-              const formattedContent = formatSectionContent(section)
+              const formattedContent = formatSectionContent({
+                key: section.key,
+                title: section.title,
+                content_markdown: section.content_markdown,
+                content_json: section.content_json || {},
+                needs_review: section.needs_review
+              })
               return (
                 <article key={section.id} id={`section-${section.id}`} className="rounded-xl border border-border/70 bg-background/60 p-4">
                   <div className="flex items-center justify-between mb-3">
