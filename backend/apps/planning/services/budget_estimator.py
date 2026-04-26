@@ -138,8 +138,8 @@ def _generate_fallback_budget(
     materials_max = 0.0
 
     for m in materials:
-        total_min = m.get("estimated_total_cost_min", m.get("estimated_total_cost", 0))
-        total_max = m.get("estimated_total_cost_max", m.get("estimated_total_cost", 0))
+        total_min = float(m.get("estimated_total_cost_min", m.get("estimated_total_cost", 0)) or 0)
+        total_max = float(m.get("estimated_total_cost_max", m.get("estimated_total_cost", 0)) or 0)
         materials_min += total_min
         materials_max += total_max
 

@@ -392,3 +392,9 @@ Return ONLY the title text, nothing else."""
         return " ".join(key_terms[:6])
 
     return hypothesis[:60].strip()
+
+
+# Legacy alias for backward compatibility
+def generate_protocol_outline(parsed: dict[str, Any]) -> list[dict[str, Any]]:
+    """Legacy protocol generation - now uses fallback as base."""
+    return _generate_fallback_protocol(parsed, safety_flags=[])

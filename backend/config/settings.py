@@ -156,6 +156,12 @@ FIREWORKS_API_KEY = os.getenv("FIREWORKS_API_KEY", "")
 FIREWORKS_BASE_URL = os.getenv("FIREWORKS_BASE_URL", "https://api.fireworks.ai/inference/v1")
 FIREWORKS_MODEL = os.getenv("FIREWORKS_MODEL", "accounts/fireworks/routers/kimi-k2p5-turbo")
 
+# Web Search API (Serper for real-time research data)
+SERPER_API_KEY = os.getenv("SERPER_API_KEY", "")
+
+# Feature Flags
+PLANNING_V2_ENABLED = os.getenv("PLANNING_V2_ENABLED", "true").lower() in ("true", "1", "yes")
+
 # Security settings for production
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
 SECURE_BROWSER_XSS_FILTER = True

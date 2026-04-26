@@ -10,3 +10,7 @@ class PlanningRuleTests(TestCase):
             if not material.get("catalog_source_url"):
                 self.assertEqual(material.get("catalog_number"), "")
                 self.assertTrue(material.get("needs_supplier_verification"))
+
+
+# Import V2 tests for test discovery
+from .tests_v2 import *  # noqa: F401, F403
