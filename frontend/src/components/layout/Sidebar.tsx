@@ -234,7 +234,7 @@ export function Sidebar() {
   return (
     <motion.aside
       className={cn(
-        "flex h-screen flex-col glass-strong relative z-30",
+        "flex h-screen flex-col glass-strong relative z-30 sticky top-0 self-start",
         collapsed ? "w-20" : "w-72"
       )}
       initial={false}
