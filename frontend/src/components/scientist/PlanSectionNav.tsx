@@ -13,17 +13,11 @@ export function PlanSectionNav({ sections, activeSectionId, onSectionClick }: Pl
   const handleClick = (sectionId: string) => {
     if (onSectionClick) {
       onSectionClick(sectionId)
-    } else {
-      // Fallback to default hash navigation
-      const element = document.getElementById(`section-${sectionId}`)
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth", block: "start" })
-      }
     }
   }
 
   return (
-    <Card className="sticky top-0 self-start hidden h-[calc(100vh-4rem)] overflow-y-auto rounded-2xl lg:block">
+    <Card className="sticky top-0 self-start hidden h-[calc(100vh-4rem)] overflow-y-auto rounded-2xl lg:block shrink-0">
       <CardHeader className="pb-3 shrink-0">
         <CardTitle className="text-base">Sections</CardTitle>
         <p className="text-sm text-muted-foreground">Jump to generated modules</p>

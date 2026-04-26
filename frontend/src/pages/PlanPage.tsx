@@ -215,65 +215,76 @@ export function PlanPage() {
     staleTime: 60_000,
   })
 
-  // IntersectionObserver to track active section
-  useEffect(() => {
+  // Track active section on scroll
+  const updateActiveSection = useCallback(() => {
     if (!planQuery.data?.sections?.length || !scrollContainerRef.current) return
 
     const container = scrollContainerRef.current
-    const sectionElements: HTMLElement[] = []
+    const containerRect = container.getBoundingClientRect()
+    // Activation point is 25% from top of viewport
+    const activationPoint = containerRect.top + containerRect.height * 0.25
 
-    // Find all section elements
+    let closestSection: { id: string; distance: number } | null = null
+
     planQuery.data.sections.forEach((section) => {
       const element = document.getElementById(`section-${section.id}`)
-      if (element) sectionElements.push(element)
+      if (!element) return
+
+      const rect = element.getBoundingClientRect()
+      // Section is "active" if its top is at or below the activation point
+      const distance = rect.top - activationPoint
+
+      if (distance <= 0) {
+        // This section is above or at the activation point
+        if (!closestSection || distance > closestSection.distance) {
+          // Choose the one closest to activation point (least negative or zero)
+          closestSection = { id: section.id, distance }
+        }
+      }
     })
 
-    if (sectionElements.length === 0) return
+    // If no section is above activation point, we're at the top - use first section
+    if (!closestSection && planQuery.data.sections.length > 0) {
+      closestSection = { id: planQuery.data.sections[0].id, distance: 0 }
+    }
+
+    if (closestSection && closestSection.id !== activeSectionId) {
+      setActiveSectionId(closestSection.id)
+    }
+  }, [planQuery.data?.sections, activeSectionId])
+
+  // Attach scroll listener
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container || !planQuery.data?.sections?.length) return
 
     // Set initial active section
     setActiveSectionId(planQuery.data.sections[0].id)
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Find the entry that is most visible (largest intersection ratio)
-        let maxRatio = 0
-        let activeId: string | null = null
+    container.addEventListener("scroll", updateActiveSection, { passive: true })
+    // Initial check
+    updateActiveSection()
 
-        entries.forEach((entry) => {
-          if (entry.intersectionRatio > maxRatio) {
-            maxRatio = entry.intersectionRatio
-            activeId = entry.target.id.replace("section-", "")
-          }
-        })
-
-        if (activeId) {
-          setActiveSectionId(activeId)
-        }
-      },
-      {
-        root: container,
-        rootMargin: "-20% 0px -60% 0px", // Trigger when section is in top 40% of viewport
-        threshold: [0, 0.25, 0.5, 0.75, 1],
-      }
-    )
-
-    sectionElements.forEach((el) => observer.observe(el))
-
-    return () => observer.disconnect()
-  }, [planQuery.data?.sections])
+    return () => container.removeEventListener("scroll", updateActiveSection)
+  }, [planQuery.data?.sections, updateActiveSection])
 
   const handleSectionClick = useCallback((sectionId: string) => {
     const element = document.getElementById(`section-${sectionId}`)
     if (element && scrollContainerRef.current) {
-      // Smooth scroll within the container
       const container = scrollContainerRef.current
-      const elementTop = element.offsetTop - container.offsetTop - 20 // 20px padding
+      const containerRect = container.getBoundingClientRect()
+      const elementRect = element.getBoundingClientRect()
+
+      // Calculate scroll position to bring element to 20% from top of container
+      const scrollOffset = elementRect.top - containerRect.top - containerRect.height * 0.2
+
       container.scrollTo({
-        top: elementTop,
+        top: container.scrollTop + scrollOffset,
         behavior: "smooth",
       })
+
+      setActiveSectionId(sectionId)
     }
-    setActiveSectionId(sectionId)
   }, [])
 
   if (planQuery.isLoading) return <PlanPageSkeleton />
@@ -289,7 +300,7 @@ export function PlanPage() {
         activeSectionId={activeSectionId}
         onSectionClick={handleSectionClick}
       />
-      <section className="flex flex-col lg:min-h-0">
+      <section className="flex flex-col lg:min-h-0 h-full">
         {/* Header - Stays visible */}
         <div className="space-y-4 shrink-0">
           <h2 className="text-3xl font-semibold tracking-tight">{plan.title}</h2>
@@ -311,7 +322,7 @@ export function PlanPage() {
         {/* Scrollable Content Area */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 lg:min-h-0 lg:overflow-y-auto custom-scrollbar lg:pr-2 mt-4"
+          className="flex-1 lg:min-h-0 lg:overflow-y-auto custom-scrollbar lg:pr-2 mt-4 scroll-smooth"
         >
           <div className="space-y-4 pb-4">
             <Card className="rounded-2xl border-border/70">
@@ -339,7 +350,7 @@ export function PlanPage() {
                     needs_review: section.needs_review
                   })
                   return (
-                    <article key={section.id} id={`section-${section.id}`} className="scroll-mt-6 rounded-xl border border-border/70 bg-background/60 p-4">
+                    <article key={section.id} id={`section-${section.id}`} className="scroll-mt-20 rounded-xl border border-border/70 bg-background/60 p-4">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-semibold">{section.title}</h4>
                         {section.needs_review && (
@@ -421,7 +432,7 @@ export function PlanPage() {
                 </a>
               </Button>
               <Button asChild variant="outline">
-                <a href={`/api/plans/${plan.id}/export/materials.csv`} target="_blank" rel="noreferrer">
+                <a href={`/api/plans/${planId}/export/materials.csv`} target="_blank" rel="noreferrer">
                   Export Materials CSV
                 </a>
               </Button>
