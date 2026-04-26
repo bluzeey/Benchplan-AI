@@ -219,7 +219,7 @@ export function PlanPage() {
   const plan = planQuery.data
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+    <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
       <PlanSectionNav sections={plan.sections ?? []} />
       <section className="space-y-4">
         <h2 className="text-3xl font-semibold tracking-tight">{plan.title}</h2>

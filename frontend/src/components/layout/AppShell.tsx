@@ -13,7 +13,7 @@ export function AppShell({ children }: Props) {
   return (
     <div className="flex min-h-screen bg-background overflow-hidden">
       <Sidebar />
-      <main className="flex min-w-0 flex-1 flex-col relative">
+      <main className="flex min-w-0 min-h-0 flex-1 flex-col relative">
         {/* Background gradient accents */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-cyan-500/5 to-transparent rounded-full blur-3xl" />
@@ -22,7 +22,7 @@ export function AppShell({ children }: Props) {
 
         {!isDashboard && <Topbar />}
         
-        <div className="flex-1 overflow-auto custom-scrollbar relative">
+        <div className="flex-1 min-h-0 overflow-auto custom-scrollbar relative">
           {isDashboard ? (
             children || <Outlet />
           ) : (
