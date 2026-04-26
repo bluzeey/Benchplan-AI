@@ -117,7 +117,7 @@ export function SettingsPage() {
           <CardContent>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-medium">BenchPlan AI</p>
+                <p className="font-medium">STRATA</p>
                 <p className="text-sm text-muted-foreground">
                   Research-operations MVP for evidence-grounded experimental planning
                 </p>

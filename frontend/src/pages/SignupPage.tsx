@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { FlaskConical, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { StrataLogo } from "@/components/ui/strata-logo"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { useAuth } from "@/app/auth-provider"
 import { ensureCsrfToken } from "@/lib/api"
@@ -63,9 +64,7 @@ export function SignupPage() {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500">
-            <FlaskConical className="h-6 w-6 text-white" />
-          </div>
+          <StrataLogo orientation="vertical" markSize={56} wordmarkClassName="text-sm tracking-[0.3em]" />
           <h2 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
             Create your account
           </h2>

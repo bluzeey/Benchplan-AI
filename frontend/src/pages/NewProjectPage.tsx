@@ -25,7 +25,7 @@ export function NewProjectPage() {
   const navigate = useNavigate()
   const form = useForm<NewProjectForm>({
     defaultValues: {
-      title: "New BenchPlan Project",
+      title: "New STRATA Project",
       domain: "other",
       lab_type: "academic",
       currency: "USD",
@@ -37,7 +37,7 @@ export function NewProjectPage() {
       const project = await apiFetchRaw("/api/projects/", {
         method: "POST",
         body: JSON.stringify({
-          title: payload.title || "BenchPlan Project",
+          title: payload.title || "STRATA Project",
           hypothesis: payload.hypothesis,
           domain: payload.domain,
           currency: payload.currency,
@@ -61,7 +61,7 @@ export function NewProjectPage() {
       <Card className="rounded-2xl border-border/70">
         <CardHeader>
           <CardTitle>New project wizard</CardTitle>
-          <p className="text-sm text-muted-foreground">Define a hypothesis and constraints. BenchPlan handles literature retrieval and plan synthesis.</p>
+          <p className="text-sm text-muted-foreground">Define a hypothesis and constraints. STRATA handles literature retrieval and plan synthesis.</p>
         </CardHeader>
       </Card>
 

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 
 import { HypothesisInput, type Attachment } from "@/components/scientist/HypothesisInput"
 import { SampleHypothesisCards } from "@/components/scientist/SampleHypothesisCards"
+import { StrataMark } from "@/components/ui/strata-logo"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ProjectSchema } from "@/lib/schemas"
@@ -51,8 +52,7 @@ const samples: Sample[] = [
   },
 ]
 
-// Animated flask logo
-function AnimatedFlask({ className }: { className?: string }) {
+function AnimatedStrataMark({ className }: { className?: string }) {
   return (
     <motion.div
       className={className}
@@ -65,112 +65,16 @@ function AnimatedFlask({ className }: { className?: string }) {
         delay: 0.2
       }}
     >
-      <motion.svg
-        viewBox="0 0 24 24"
-        fill="none"
-        className="w-full h-full"
-        xmlns="http://www.w3.org/2000/svg"
-        animate={{ 
-          y: [0, -5, 0],
-        }}
+      <motion.div
+        animate={{ y: [0, -4, 0] }}
         transition={{
           duration: 4,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: "easeInOut",
         }}
       >
-        <defs>
-          <linearGradient id="flaskGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <motion.stop
-              offset="0%"
-              stopColor="#22d3ee"
-              animate={{ stopColor: ["#22d3ee", "#a855f7", "#22d3ee"] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            />
-            <motion.stop
-              offset="100%"
-              stopColor="#a855f7"
-              animate={{ stopColor: ["#a855f7", "#22d3ee", "#a855f7"] }}
-              transition={{ duration: 4, repeat: Infinity }}
-            />
-          </linearGradient>
-        </defs>
-        <motion.path
-          d="M9 3L7 9H17L15 3H9Z"
-          stroke="url(#flaskGradient)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 1, delay: 0.5 }}
-        />
-        <motion.path
-          d="M6 9L4 16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16L18 9"
-          stroke="url(#flaskGradient)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 1, delay: 0.7 }}
-        />
-        <motion.path
-          d="M12 14V14.01"
-          stroke="url(#flaskGradient)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-        />
-        <motion.path
-          d="M8 14C8 14 9 16 12 16C15 16 16 14 16 14"
-          stroke="url(#flaskGradient)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4 }}
-        />
-        {/* Animated bubbles */}
-        <motion.circle
-          cx="10"
-          cy="17"
-          r="1.5"
-          fill="url(#flaskGradient)"
-          initial={{ scale: 0, y: 0 }}
-          animate={{ 
-            scale: [0, 1, 0],
-            y: [0, -10, -20]
-          }}
-          transition={{ 
-            duration: 2, 
-            repeat: Infinity, 
-            delay: 1.5,
-            ease: "easeOut"
-          }}
-        />
-        <motion.circle
-          cx="14"
-          cy="18"
-          r="1"
-          fill="url(#flaskGradient)"
-          initial={{ scale: 0, y: 0 }}
-          animate={{ 
-            scale: [0, 1, 0],
-            y: [0, -8, -16]
-          }}
-          transition={{ 
-            duration: 2, 
-            repeat: Infinity, 
-            delay: 2,
-            ease: "easeOut"
-          }}
-        />
-      </motion.svg>
+        <StrataMark size={64} className="drop-shadow-[0_0_28px_rgba(96,165,250,0.45)]" />
+      </motion.div>
     </motion.div>
   )
 }
@@ -317,16 +221,16 @@ export function DashboardPage() {
           initial="hidden"
           animate="visible"
         >
-          {/* Flask icon with glow */}
+          {/* Brand mark with glow */}
           <motion.div
             className="mb-6 relative"
             variants={staggerItem}
           >
             {/* Glow effect */}
             <div className="absolute inset-0 blur-3xl">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-400/50 to-purple-500/50" />
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-sky-400/50 to-blue-600/40" />
             </div>
-            <AnimatedFlask className="relative h-16 w-16" />
+            <AnimatedStrataMark className="relative h-16 w-16" />
           </motion.div>
 
           <motion.h1

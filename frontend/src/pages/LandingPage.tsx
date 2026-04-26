@@ -1,14 +1,13 @@
 import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { z } from "zod"
 
 import { HypothesisInput, type Attachment } from "@/components/scientist/HypothesisInput"
 import { SampleHypothesisCards } from "@/components/scientist/SampleHypothesisCards"
+import { StrataLogo } from "@/components/ui/strata-logo"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ProjectSchema } from "@/lib/schemas"
-import { FlaskConical } from "lucide-react"
-import { Link } from "react-router-dom"
 
 const StartQcSchema = z.object({
   qc_run_id: z.string(),
@@ -97,12 +96,7 @@ export function LandingPage() {
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
       <header className="flex h-16 items-center justify-between border-b border-border px-8">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-purple-500">
-            <FlaskConical className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-lg font-semibold text-foreground">BenchPlan AI</span>
-        </div>
+        <StrataLogo markSize={34} wordmarkClassName="text-lg tracking-[0.22em]" />
         <div className="flex items-center gap-4">
           <Link
             to="/login"
@@ -126,7 +120,7 @@ export function LandingPage() {
             How can I help design your next experiment?
           </h1>
           <p className="mt-3 max-w-2xl text-center text-muted-foreground">
-            Enter a hypothesis, and BenchPlan will run literature quality checks, 
+            Enter a hypothesis, and STRATA will run literature quality checks,
             identify novelty signals, and draft a structured experiment plan with references, budget, and timeline.
           </p>
         </div>

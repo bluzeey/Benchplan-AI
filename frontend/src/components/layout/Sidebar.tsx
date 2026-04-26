@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils"
 import { apiFetch } from "@/lib/api"
 import { useAuth } from "@/app/auth-provider"
 import { ExperimentPlanSchema } from "@/lib/schemas"
+import { StrataLogo } from "@/components/ui/strata-logo"
 import { z } from "zod"
 import { fadeInLeft, staggerContainer, staggerItem, hoverLift } from "@/lib/motion"
 
@@ -258,42 +259,7 @@ export function Sidebar() {
               exit={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.2 }}
             >
-              <motion.div
-                className="flex h-9 w-9 items-center justify-center rounded-xl"
-                whileHover={{ scale: 1.05, rotate: 5 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="h-7 w-7"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <defs>
-                    <linearGradient id="sidebarFlask" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#22d3ee" />
-                      <stop offset="100%" stopColor="#a855f7" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M9 3L7 9H17L15 3H9Z"
-                    stroke="url(#sidebarFlask)"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M6 9L4 16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16L18 9"
-                    stroke="url(#sidebarFlask)"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </motion.div>
-              <span className="font-display font-semibold text-foreground tracking-tight">
-                BenchPlan AI
-              </span>
+              <StrataLogo markSize={30} wordmarkClassName="text-sm tracking-[0.2em]" />
             </motion.div>
           )}
         </AnimatePresence>
