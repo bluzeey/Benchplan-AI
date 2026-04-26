@@ -67,11 +67,23 @@ export const QuestionSchema = z.object({
   parsed_json: z.record(z.string(), z.any()).default({}),
 })
 
+export const ProjectAttachmentSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  url: z.string(),
+  content_type: z.string(),
+  size: z.number(),
+  created_at: z.string(),
+})
+
+export type ProjectAttachment = z.infer<typeof ProjectAttachmentSchema>
+
 export const ProjectSchema = z.object({
   id: IdSchema,
   title: z.string(),
   domain: z.string().nullable().optional(),
   questions: z.array(QuestionSchema).default([]),
+  attachments: z.array(ProjectAttachmentSchema).default([]),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 })

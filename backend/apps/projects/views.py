@@ -1,8 +1,10 @@
-from rest_framework import mixins, viewsets
-from rest_framework.generics import CreateAPIView, RetrieveAPIView
+from rest_framework import mixins, viewsets, status
+from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView, DestroyAPIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
-from .models import ExperimentQuestion, Project
-from .serializers import ExperimentQuestionSerializer, ProjectCreateSerializer, ProjectSerializer
+from .models import ExperimentQuestion, Project, ProjectAttachment
+from .serializers import ExperimentQuestionSerializer, ProjectCreateSerializer, ProjectSerializer, ProjectAttachmentSerializer
 
 
 class ProjectViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -28,3 +30,28 @@ class QuestionDetailView(RetrieveAPIView):
     queryset = ExperimentQuestion.objects.all()
     serializer_class = ExperimentQuestionSerializer
     lookup_url_kwarg = "question_id"
+
+
+class ProjectAttachmentListView(ListAPIView):
+    """List all attachments for a specific project."""
+    serializer_class = ProjectAttachmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        project_id = self.kwargs["project_id"]
+        return ProjectAttachment.objects.filter(
+            project__id=project_id,
+            project__owner=self.request.user
+        )
+
+
+class ProjectAttachmentDeleteView(DestroyAPIView):
+    """Delete a specific attachment (owner only)."""
+    serializer_class = ProjectAttachmentSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_url_kwarg = "attachment_id"
+
+    def get_queryset(self):
+        return ProjectAttachment.objects.filter(
+            project__owner=self.request.user
+        )

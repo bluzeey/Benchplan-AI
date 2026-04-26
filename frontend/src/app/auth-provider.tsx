@@ -141,17 +141,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await apiFetchRaw("/api/auth/logout/", { method: "POST" })
-      toast.success("Logged out", {
-        description: "See you next time!",
-      })
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Logout failed"
-      toast.error("Logout failed", {
-        description: message,
-      })
+      // Treat 403/session errors as effectively logged out - don't block UX
+      console.log("Logout request failed (session may already be invalid):", err)
     } finally {
       setUser(null)
       resetCsrfToken()
+      toast.success("Logged out", {
+        description: "See you next time!",
+      })
     }
   }
 

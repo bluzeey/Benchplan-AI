@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { z } from "zod"
-import { FileText, Loader2, Plus, Clock, DollarSign } from "lucide-react"
+import { FileText, Loader2, Plus, Clock, DollarSign, Paperclip, Trash2, Download, ExternalLink } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -87,6 +88,21 @@ export function ProjectPage() {
     },
   })
 
+  const deleteAttachment = useMutation({
+    mutationFn: async (attachmentId: string) => {
+      await apiFetchRaw(`/api/attachments/${attachmentId}/`, { method: "DELETE" })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(projectId || "") })
+      toast.success("Attachment deleted")
+    },
+    onError: (err) => {
+      toast.error("Failed to delete attachment", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      })
+    },
+  })
+
   if (projectQuery.isLoading) return <p className="text-sm text-muted-foreground">Loading project...</p>
   if (projectQuery.error) return <p className="text-sm text-destructive">{(projectQuery.error as Error).message}</p>
   if (!projectQuery.data) return null
@@ -125,6 +141,65 @@ export function ProjectPage() {
             "Run Literature QC"
           )}
         </Button>
+      </div>
+
+      {/* Attachments Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-semibold">Attachments</h3>
+          <span className="text-sm text-muted-foreground">{project.attachments?.length ?? 0} file(s)</span>
+        </div>
+
+        {project.attachments && project.attachments.length > 0 ? (
+          <div className="grid gap-3">
+            {project.attachments.map((att) => (
+              <div
+                key={att.id}
+                className="flex items-center justify-between rounded-xl border border-border bg-card p-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                    <Paperclip className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{att.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(att.size / 1024).toFixed(1)} KB • {new Date(att.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+                    <a href={att.url} target="_blank" rel="noreferrer" download={att.name}>
+                      <Download className="h-4 w-4" />
+                    </a>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => deleteAttachment.mutate(att.id)}
+                    disabled={deleteAttachment.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Card className="rounded-2xl border-border/70">
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <Paperclip className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">No attachments yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Attachments are added when creating a project with files.
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Plans Section */}

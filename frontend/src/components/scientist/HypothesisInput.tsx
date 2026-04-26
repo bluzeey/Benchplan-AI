@@ -4,6 +4,7 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { apiFetchRaw, API_BASE_URL } from "@/lib/api"
 
 export interface Attachment {
   id: string
@@ -142,38 +143,16 @@ export function HypothesisInput({
 
       try {
         // 1. Get presigned URL from backend using apiFetchRaw (handles CSRF)
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
-        
-        // First fetch CSRF token
-        await fetch(`${API_BASE_URL}/api/csrf/`, { credentials: "include" })
-        
-        // Get the CSRF cookie value
-        const csrfCookie = document.cookie
-          .split(";")
-          .find((c) => c.trim().startsWith("csrftoken="))
-        const csrfToken = csrfCookie ? csrfCookie.split("=")[1] : ""
-        
-        const presignRes = await fetch(`${API_BASE_URL}/api/uploads/presign/`, {
+        const presignData = await apiFetchRaw("/api/uploads/presign/", {
           method: "POST",
-          credentials: "include",
-          headers: { 
-            "Content-Type": "application/json",
-            "X-CSRFToken": csrfToken,
-          },
           body: JSON.stringify({
             filename: attachment.file.name,
             content_type: attachment.file.type,
             size: attachment.file.size,
           }),
-        })
+        }) as { upload_url: string; file_url: string; object_key: string }
 
-        if (!presignRes.ok) {
-          const errorData = await presignRes.json().catch(() => ({}))
-          console.error("Presign error:", errorData)
-          throw new Error(errorData.error || "Failed to get upload URL")
-        }
-
-        const { upload_url, file_url, object_key } = await presignRes.json()
+        const { upload_url, file_url, object_key } = presignData
 
         // 2. Upload directly to R2 (no CSRF needed for R2)
         const uploadRes = await fetch(upload_url, {
