@@ -186,8 +186,8 @@ export function PlanPage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
   const isAutoScrollingRef = useRef(false)
-  const autoScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const scrollSettleTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const autoScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollSettleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const planQuery = useQuery({
     queryKey: queryKeys.plans.detail(planId || ""),
