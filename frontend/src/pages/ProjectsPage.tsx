@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 import { z } from "zod"
@@ -29,6 +29,7 @@ import {
   Activity,
   FileCheck,
   Sparkles,
+  X,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -39,22 +40,21 @@ import { apiFetch } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { EmptyState } from "@/components/ui/empty-state"
 import { Tooltip, HelpTooltip } from "@/components/ui/tooltip"
-import { 
-  TableSkeleton, 
-  StatsCardSkeleton, 
-  ProjectDetailSkeleton,
-  PageHeaderSkeleton 
+import {
+  TableSkeleton,
+  StatsCardSkeleton,
+  PageHeaderSkeleton
 } from "@/components/ui/skeleton"
-import { 
+import {
   ProjectsListSchema,
   PlansListSchema,
   ReviewsListSchema,
   type PlanListItem,
 } from "@/lib/schemas"
 import { queryKeys } from "@/lib/query-keys"
-import { 
-  fadeInUp, 
-  staggerContainer, 
+import {
+  fadeInUp,
+  staggerContainer,
   staggerItem,
   tableRow,
   tableStagger,
@@ -337,6 +337,361 @@ function TableRow({
   )
 }
 
+// Project Detail Sheet Component
+function ProjectDetailSheet({
+  project,
+  plans,
+  reviews,
+  isOpen,
+  onClose,
+}: {
+  project: {
+    id: string
+    title: string
+    domain?: string | null
+    owner_name?: string
+    created_at: string
+    updated_at: string
+    questions?: { raw_text: string }[]
+  } | undefined
+  plans: {
+    id: string
+    title: string
+    status: string
+    project: string | number
+    scientist_review_status: string
+    created_at: string
+    updated_at: string
+  }[]
+  reviews: {
+    id: string
+    plan: string
+    status: string
+    overall_rating?: number | null | undefined
+    created_at: string
+  }[]
+  isOpen: boolean
+  onClose: () => void
+}) {
+  const navigate = useNavigate()
+
+  // Close on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    if (isOpen) {
+      document.addEventListener("keydown", handleEscape)
+      return () => document.removeEventListener("keydown", handleEscape)
+    }
+  }, [isOpen, onClose])
+
+  // Prevent body scroll when sheet is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden"
+      return () => {
+        document.body.style.overflow = "unset"
+      }
+    }
+  }, [isOpen])
+
+  const selectedProjectPlans = project
+    ? plans.filter((p) => String(p.project) === String(project.id))
+    : []
+
+  const selectedProjectReviews = reviews.filter((r) =>
+    selectedProjectPlans.some((p) => String(p.id) === String(r.plan))
+  )
+
+  const activities = useMemo(() => {
+    if (!project) return []
+
+    const items = []
+
+    items.push({
+      id: `created-${project.id}`,
+      type: "project_created" as const,
+      title: "Project created",
+      description: `${project.title} was created`,
+      timestamp: project.created_at,
+      icon: FolderOpen,
+      color: "text-blue-400",
+    })
+
+    selectedProjectPlans.forEach((plan) => {
+      items.push({
+        id: `plan-${plan.id}`,
+        type: "plan_generated" as const,
+        title: "Plan generated",
+        description: plan.title,
+        timestamp: plan.created_at,
+        icon: FileText,
+        color: "text-emerald-400",
+      })
+    })
+
+    selectedProjectReviews.forEach((review) => {
+      if (review.status === "completed") {
+        items.push({
+          id: `review-${review.id}`,
+          type: "review_completed" as const,
+          title: "Scientist review completed",
+          description: `Rated ${review.overall_rating}/5`,
+          timestamp: review.created_at,
+          icon: FileCheck,
+          color: "text-purple-400",
+        })
+      }
+    })
+
+    return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5)
+  }, [project, selectedProjectPlans, selectedProjectReviews])
+
+  if (!project) return null
+
+  const Icon = domainIcons[project.domain || ""] || FlaskConical
+  const status = selectedProjectPlans.some((p) => p.status === "generating")
+    ? "In Progress"
+    : selectedProjectPlans.some((p) => p.status === "draft")
+    ? "Draft"
+    : selectedProjectPlans.some((p) => p.scientist_review_status === "required")
+    ? "Review"
+    : selectedProjectPlans.length > 0
+    ? "Ready"
+    : "Planning"
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            onClick={onClose}
+          />
+
+          {/* Sheet */}
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed top-0 right-0 h-full w-full sm:w-[400px] lg:w-[480px] z-50"
+          >
+            <div className="h-full w-full glass-strong border-l border-border/60 overflow-auto custom-scrollbar">
+              <Card className="h-full rounded-none border-0 bg-transparent">
+                <CardHeader className="pb-4 pt-4 sticky top-0 z-10 bg-card/95 backdrop-blur-xl border-b border-border/40">
+                  <div className="flex items-start justify-between">
+                    <motion.div
+                      className={cn(
+                        "flex h-14 w-14 items-center justify-center rounded-2xl border transition-all duration-300",
+                        "shadow-lg",
+                        domainColors[project.domain || ""] || "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                      )}
+                      whileHover={{ scale: 1.05, rotate: 5 }}
+                    >
+                      <Icon className="h-7 w-7" />
+                    </motion.div>
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onClose}
+                        className="rounded-full h-10 w-10"
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </motion.div>
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="font-display font-semibold text-lg text-foreground">
+                      {project.title}
+                    </h3>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "mt-2 text-xs",
+                        statusColors[status] || "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                      )}
+                    >
+                      <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current" />
+                      {status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-6 pt-4">
+                  {/* Description */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                      Description
+                      <HelpTooltip content="Project description from initial hypothesis" />
+                    </h4>
+                    <p className="text-sm text-muted-foreground line-clamp-4">
+                      {project.questions?.[0]?.raw_text || "No description available"}
+                    </p>
+                  </motion.div>
+
+                  {/* Project Info */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                  >
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1">
+                      Project Info
+                      <HelpTooltip content="Key project metadata" />
+                    </h4>
+                    <div className="space-y-2">
+                      {[
+                        { icon: BookOpen, label: "Domain", value: project.domain || "Other" },
+                        { icon: Calendar, label: "Created", value: formatDate(project.created_at) },
+                        { icon: User, label: "Owner", value: project.owner_name || "You" },
+                        { icon: Clock, label: "Last Updated", value: formatRelativeTime(project.updated_at) },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm group">
+                          <span className="text-muted-foreground flex items-center gap-2">
+                            <item.icon className="h-3.5 w-3.5" />
+                            {item.label}
+                          </span>
+                          <span className="text-foreground font-medium">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+
+                  {/* Overview Stats */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1">
+                      Overview
+                      <HelpTooltip content="Quick statistics for this project" />
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { icon: FileText, value: selectedProjectPlans.length, label: "Plans", color: "emerald" },
+                        { icon: CheckCircle, value: selectedProjectReviews.length, label: "Reviews", color: "blue" },
+                        { icon: BookOpen, value: selectedProjectPlans.length, label: "Plans", color: "cyan" },
+                        { icon: Star, value: selectedProjectReviews.filter((r) => r.overall_rating).length > 0
+                          ? (selectedProjectReviews.reduce((sum, r) => sum + (r.overall_rating || 0), 0) /
+                             selectedProjectReviews.filter((r) => r.overall_rating).length).toFixed(1) + "/5"
+                          : "—", label: "Avg. Quality", color: "amber" },
+                      ].map((stat, i) => (
+                        <motion.div
+                          key={i}
+                          className={cn(
+                            "rounded-xl p-3 transition-all duration-200",
+                            "bg-gradient-to-br",
+                            stat.color === "emerald" && "from-emerald-500/10 to-emerald-600/5 hover:from-emerald-500/20",
+                            stat.color === "blue" && "from-blue-500/10 to-blue-600/5 hover:from-blue-500/20",
+                            stat.color === "cyan" && "from-cyan-500/10 to-cyan-600/5 hover:from-cyan-500/20",
+                            stat.color === "amber" && "from-amber-500/10 to-amber-600/5 hover:from-amber-500/20",
+                          )}
+                          whileHover={{ scale: 1.02 }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <stat.icon className={cn(
+                              "h-4 w-4",
+                              stat.color === "emerald" && "text-emerald-400",
+                              stat.color === "blue" && "text-blue-400",
+                              stat.color === "cyan" && "text-cyan-400",
+                              stat.color === "amber" && "text-amber-400",
+                            )} />
+                            <span className="text-lg font-display font-bold text-foreground">{stat.value}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+
+                  {/* Recent Activity */}
+                  {activities.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25 }}
+                    >
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1">
+                        Recent Activity
+                        <HelpTooltip content="Latest actions on this project" />
+                      </h4>
+                      <div className="space-y-3">
+                        {activities.map((activity, index) => (
+                          <motion.div
+                            key={activity.id}
+                            className="flex gap-3"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 + index * 0.05 }}
+                          >
+                            <div className="relative flex flex-col items-center">
+                              <div className={cn(
+                                "flex h-7 w-7 items-center justify-center rounded-full",
+                                "bg-gradient-to-br",
+                                activity.color.replace("text-", "from-").replace("400", "500/20") + " to-" + activity.color.replace("text-", "").replace("400", "600/10")
+                              )}>
+                                <activity.icon className={cn("h-3.5 w-3.5", activity.color)} />
+                              </div>
+                              {index < activities.length - 1 && (
+                                <div className="mt-1 h-full w-px bg-gradient-to-b from-border to-transparent" />
+                              )}
+                            </div>
+                            <div className="flex-1 pb-3">
+                              <p className="text-sm font-medium text-foreground">{activity.title}</p>
+                              <p className="text-xs text-muted-foreground">{activity.description}</p>
+                              <p className="text-xs text-muted-foreground/70 mt-1">
+                                {formatRelativeTime(activity.timestamp)}
+                              </p>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* View Project Button */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35 }}
+                    className="pt-2 pb-4"
+                  >
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:opacity-90"
+                        onClick={() => navigate(`/projects/${project.id}`)}
+                      >
+                        View Project
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </motion.div>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
+
 export function ProjectsPage() {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
@@ -345,7 +700,7 @@ export function ProjectsPage() {
   const [domainFilter, setDomainFilter] = useState("All Domains")
   const [sortBy, setSortBy] = useState("Updated (Newest)")
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 7
+  const itemsPerPage = 10
 
   // Fetch data using shared cache keys
   const projectsQuery = useQuery({
@@ -433,57 +788,8 @@ export function ProjectsPage() {
     currentPage * itemsPerPage
   )
 
-  // Selected project details
-  const selectedProject = projects.find((p) => p.id === selectedProjectId)
-  const selectedProjectPlans = plans.filter((p) => p.project === selectedProjectId)
-  const selectedProjectReviews = reviews.filter((r) =>
-    selectedProjectPlans.some((p) => p.id === String(r.plan))
-  )
-
-  // Activity timeline
-  const activities = useMemo(() => {
-    if (!selectedProject) return []
-
-    const items = []
-
-    items.push({
-      id: `created-${selectedProject.id}`,
-      type: "project_created" as const,
-      title: "Project created",
-      description: `${selectedProject.title} was created`,
-      timestamp: selectedProject.created_at,
-      icon: FolderOpen,
-      color: "text-blue-400",
-    })
-
-    selectedProjectPlans.forEach((plan) => {
-      items.push({
-        id: `plan-${plan.id}`,
-        type: "plan_generated" as const,
-        title: "Plan generated",
-        description: plan.title,
-        timestamp: plan.created_at,
-        icon: FileText,
-        color: "text-emerald-400",
-      })
-    })
-
-    selectedProjectReviews.forEach((review) => {
-      if (review.status === "completed") {
-        items.push({
-          id: `review-${review.id}`,
-          type: "review_completed" as const,
-          title: "Scientist review completed",
-          description: `Rated ${review.overall_rating}/5`,
-          timestamp: review.created_at,
-          icon: FileCheck,
-          color: "text-purple-400",
-        })
-      }
-    })
-
-    return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5)
-  }, [selectedProject, selectedProjectPlans, selectedProjectReviews])
+  // Selected project
+  const selectedProject = projects.find((p) => String(p.id) === selectedProjectId)
 
   const domains = useMemo(() => {
     const domainSet = new Set(projects.map((p) => p.domain).filter((d): d is string => Boolean(d)))
@@ -492,29 +798,29 @@ export function ProjectsPage() {
 
   const isLoading = projectsQuery.isLoading || plansQuery.isLoading
 
-  // Show skeleton while loading
+  // Close sheet handler
+  const handleCloseSheet = useCallback(() => {
+    setSelectedProjectId(null)
+  }, [])
+
+  // Show skeleton while loading - now uses full width
   if (isLoading) {
     return (
-      <div className="flex h-[calc(100vh-4rem)] gap-6">
-        <div className="flex-1 min-w-0 space-y-6 overflow-auto">
-          <PageHeaderSkeleton />
-          <StatsCardSkeleton count={4} />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-32 bg-muted rounded-lg shimmer" />
-              <div className="h-9 w-32 bg-muted rounded-lg shimmer" />
-              <div className="h-9 w-32 bg-muted rounded-lg shimmer" />
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-9 bg-muted rounded-lg shimmer" />
-              <div className="h-9 w-9 bg-muted rounded-lg shimmer" />
-            </div>
+      <div className="h-[calc(100vh-4rem)] space-y-6 overflow-auto custom-scrollbar">
+        <PageHeaderSkeleton />
+        <StatsCardSkeleton count={4} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-32 bg-muted rounded-lg shimmer" />
+            <div className="h-9 w-32 bg-muted rounded-lg shimmer" />
+            <div className="h-9 w-32 bg-muted rounded-lg shimmer" />
           </div>
-          <TableSkeleton rows={7} columns={6} />
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 bg-muted rounded-lg shimmer" />
+            <div className="h-9 w-9 bg-muted rounded-lg shimmer" />
+          </div>
         </div>
-        <div className="w-80 shrink-0">
-          <ProjectDetailSkeleton />
-        </div>
+        <TableSkeleton rows={7} columns={6} />
       </div>
     )
   }
@@ -543,9 +849,8 @@ export function ProjectsPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] gap-6">
-      {/* Main Content */}
-      <div className="flex-1 min-w-0 space-y-6 overflow-auto custom-scrollbar">
+    <>
+      <div className="h-[calc(100vh-4rem)] space-y-6 overflow-auto custom-scrollbar">
         {/* Header */}
         <motion.div
           className="flex items-start justify-between"
@@ -795,274 +1100,14 @@ export function ProjectsPage() {
         </motion.div>
       </div>
 
-      {/* Right Panel - Project Details */}
-      <motion.div
-        className="w-80 shrink-0"
-        variants={fadeInUp}
-        initial="hidden"
-        animate="visible"
-        transition={{ delay: 0.4 }}
-      >
-        <AnimatePresence mode="wait">
-          {selectedProject ? (
-            <motion.div
-              key={selectedProject.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            >
-              <Card className="sticky top-0 rounded-2xl border-border/60 bg-card/50 backdrop-blur-xl">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <motion.div
-                      className={cn(
-                        "flex h-14 w-14 items-center justify-center rounded-2xl border transition-all duration-300",
-                        "shadow-lg",
-                        domainColors[selectedProject.domain || ""] || "bg-gray-500/20 text-gray-400 border-gray-500/30"
-                      )}
-                      whileHover={{ scale: 1.05, rotate: 5 }}
-                    >
-                      {(() => {
-                        const Icon = domainIcons[selectedProject.domain || ""] || FlaskConical
-                        return <Icon className="h-7 w-7" />
-                      })()}
-                    </motion.div>
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedProjectId(null)}
-                        className="rounded-full"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </motion.div>
-                  </div>
-                  <div className="mt-4">
-                    <h3 className="font-display font-semibold text-lg text-foreground">
-                      {selectedProject.title}
-                    </h3>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "mt-2 text-xs",
-                        statusColors[selectedProjectPlans.some((p) => p.status === "generating")
-                          ? "In Progress"
-                          : selectedProjectPlans.some((p) => p.status === "draft")
-                          ? "Draft"
-                          : selectedProjectPlans.some((p) => p.scientist_review_status === "required")
-                          ? "Review"
-                          : selectedProjectPlans.length > 0
-                          ? "Ready"
-                          : "Planning"] || "bg-gray-500/20 text-gray-400 border-gray-500/30"
-                      )}
-                    >
-                      <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current" />
-                      {selectedProjectPlans.some((p) => p.status === "generating")
-                        ? "In Progress"
-                        : selectedProjectPlans.some((p) => p.status === "draft")
-                        ? "Draft"
-                        : selectedProjectPlans.some((p) => p.scientist_review_status === "required")
-                        ? "Review"
-                        : selectedProjectPlans.length > 0
-                        ? "Ready"
-                        : "Planning"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-6 pt-0">
-                  {/* Description */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                  >
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-                      Description
-                      <HelpTooltip content="Project description from initial hypothesis" />
-                    </h4>
-                    <p className="text-sm text-muted-foreground line-clamp-4">
-                      {selectedProject.questions?.[0]?.raw_text || "No description available"}
-                    </p>
-                  </motion.div>
-
-                  {/* Project Info */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
-                  >
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1">
-                      Project Info
-                      <HelpTooltip content="Key project metadata" />
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        { icon: BookOpen, label: "Domain", value: selectedProject.domain || "Other" },
-                        { icon: Calendar, label: "Created", value: formatDate(selectedProject.created_at) },
-                        { icon: User, label: "Owner", value: selectedProject.owner_name || "You" },
-                        { icon: Clock, label: "Last Updated", value: formatRelativeTime(selectedProject.updated_at) },
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm group">
-                          <span className="text-muted-foreground flex items-center gap-2">
-                            <item.icon className="h-3.5 w-3.5" />
-                            {item.label}
-                          </span>
-                          <span className="text-foreground font-medium">{item.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-
-                  {/* Overview Stats */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1">
-                      Overview
-                      <HelpTooltip content="Quick statistics for this project" />
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { icon: FileText, value: selectedProjectPlans.length, label: "Plans", color: "emerald" },
-                        { icon: CheckCircle, value: selectedProjectReviews.length, label: "Reviews", color: "blue" },
-                        { icon: BookOpen, value: selectedProjectPlans.reduce((sum, p) => sum + (p.estimated_budget_max ? 1 : 0), 0), label: "References", color: "cyan" },
-                        { icon: Star, value: selectedProjectReviews.filter((r) => r.overall_rating).length > 0
-                          ? (selectedProjectReviews.reduce((sum, r) => sum + (r.overall_rating || 0), 0) /
-                             selectedProjectReviews.filter((r) => r.overall_rating).length).toFixed(1) + "/5"
-                          : "—", label: "Avg. Quality", color: "amber" },
-                      ].map((stat, i) => (
-                        <motion.div
-                          key={i}
-                          className={cn(
-                            "rounded-xl p-3 transition-all duration-200",
-                            "bg-gradient-to-br",
-                            stat.color === "emerald" && "from-emerald-500/10 to-emerald-600/5 hover:from-emerald-500/20",
-                            stat.color === "blue" && "from-blue-500/10 to-blue-600/5 hover:from-blue-500/20",
-                            stat.color === "cyan" && "from-cyan-500/10 to-cyan-600/5 hover:from-cyan-500/20",
-                            stat.color === "amber" && "from-amber-500/10 to-amber-600/5 hover:from-amber-500/20",
-                          )}
-                          whileHover={{ scale: 1.02 }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <stat.icon className={cn(
-                              "h-4 w-4",
-                              stat.color === "emerald" && "text-emerald-400",
-                              stat.color === "blue" && "text-blue-400",
-                              stat.color === "cyan" && "text-cyan-400",
-                              stat.color === "amber" && "text-amber-400",
-                            )} />
-                            <span className="text-lg font-display font-bold text-foreground">{stat.value}</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-
-                  {/* Recent Activity */}
-                  {activities.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.25 }}
-                    >
-                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1">
-                        Recent Activity
-                        <HelpTooltip content="Latest actions on this project" />
-                      </h4>
-                      <div className="space-y-3">
-                        {activities.map((activity, index) => (
-                          <motion.div
-                            key={activity.id}
-                            className="flex gap-3"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.3 + index * 0.05 }}
-                          >
-                            <div className="relative flex flex-col items-center">
-                              <div className={cn(
-                                "flex h-7 w-7 items-center justify-center rounded-full",
-                                "bg-gradient-to-br",
-                                activity.color.replace("text-", "from-").replace("400", "500/20") + " to-" + activity.color.replace("text-", "").replace("400", "600/10")
-                              )}>
-                                <activity.icon className={cn("h-3.5 w-3.5", activity.color)} />
-                              </div>
-                              {index < activities.length - 1 && (
-                                <div className="mt-1 h-full w-px bg-gradient-to-b from-border to-transparent" />
-                              )}
-                            </div>
-                            <div className="flex-1 pb-3">
-                              <p className="text-sm font-medium text-foreground">{activity.title}</p>
-                              <p className="text-xs text-muted-foreground">{activity.description}</p>
-                              <p className="text-xs text-muted-foreground/70 mt-1">
-                                {formatRelativeTime(activity.timestamp)}
-                              </p>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* View Project Button */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35 }}
-                  >
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                      <Button
-                        className="w-full gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:opacity-90"
-                        onClick={() => navigate(`/projects/${selectedProject.id}`)}
-                      >
-                        View Project
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </motion.div>
-                  </motion.div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card className="sticky top-0 rounded-2xl border-border/60 bg-card/50 backdrop-blur-sm">
-                <CardContent className="py-12 text-center">
-                  <motion.div
-                    className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20"
-                    animate={{ 
-                      scale: [1, 1.05, 1],
-                      rotate: [0, 5, -5, 0]
-                    }}
-                    transition={{ duration: 4, repeat: Infinity }}
-                  >
-                    <FolderOpen className="h-8 w-8 text-cyan-400" />
-                  </motion.div>
-                  <p className="text-sm text-muted-foreground">
-                    Select a project to view details
-                  </p>
-                  <p className="text-xs text-muted-foreground/70 mt-2">
-                    Click on any project in the table
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </div>
+      {/* Project Detail Sheet */}
+      <ProjectDetailSheet
+        project={selectedProject}
+        plans={plans}
+        reviews={reviews}
+        isOpen={selectedProjectId !== null}
+        onClose={handleCloseSheet}
+      />
+    </>
   )
 }
