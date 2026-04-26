@@ -185,7 +185,8 @@ export function PlanPage() {
   const { planId } = useParams()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
-  const lastScrollPosition = useRef(0)
+  const isAutoScrollingRef = useRef(false)
+  const autoScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const planQuery = useQuery({
     queryKey: queryKeys.plans.detail(planId || ""),
@@ -216,57 +217,43 @@ export function PlanPage() {
     staleTime: 60_000,
   })
 
-  // Track active section on scroll with hysteresis to prevent jumping
+  // Track active section on scroll - stable logic without direction-based jumping
   const updateActiveSection = useCallback(() => {
+    // Skip if we're in the middle of a programmatic scroll
+    if (isAutoScrollingRef.current) return
     if (!planQuery.data?.sections?.length || !scrollContainerRef.current) return
 
     const container = scrollContainerRef.current
     const scrollTop = container.scrollTop
-    const scrollDirection = scrollTop > lastScrollPosition.current ? "down" : "up"
-    lastScrollPosition.current = scrollTop
 
-    // Get all section elements and their positions
+    // Get all section elements and their positions relative to container
     const sections = planQuery.data.sections.map((section) => {
       const element = document.getElementById(`section-${section.id}`)
-      if (!element) return { id: section.id, top: Infinity, bottom: Infinity }
+      if (!element) return { id: section.id, top: Infinity }
       const rect = element.getBoundingClientRect()
       const containerRect = container.getBoundingClientRect()
       return {
         id: section.id,
-        top: rect.top - containerRect.top + scrollTop,
-        bottom: rect.bottom - containerRect.top + scrollTop,
+        top: rect.top - containerRect.top, // relative to viewport
       }
     })
 
-    // Activation point is 120px from top (gives room for sticky header if any)
-    const activationOffset = scrollTop + 120
+    // Activation line: 100px from top of viewport (stable threshold)
+    const ACTIVATION_LINE = 100
 
+    // Find the last section whose top is at or above the activation line
     let newActiveId: string | null = null
-
-    if (scrollDirection === "down") {
-      // When scrolling down, activate section whose TOP just crossed the line
-      for (let i = sections.length - 1; i >= 0; i--) {
-        if (sections[i].top <= activationOffset) {
-          newActiveId = sections[i].id
-          break
-        }
-      }
-    } else {
-      // When scrolling up, activate section whose TOP is just above the line
-      for (let i = 0; i < sections.length; i++) {
-        if (sections[i].top >= activationOffset - 50) {
-          // Within 50px above
-          newActiveId = sections[i].id
-          break
-        }
-        if (sections[i].top <= activationOffset) {
-          newActiveId = sections[i].id
-        }
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i].top <= ACTIVATION_LINE) {
+        newActiveId = sections[i].id
+      } else {
+        // This section is below the line, stop here
+        break
       }
     }
 
-    // Default to first section if nothing found
-    if (!newActiveId && sections.length > 0) {
+    // Default to first section if at the very top
+    if (!newActiveId && sections.length > 0 && scrollTop < 50) {
       newActiveId = sections[0].id
     }
 
@@ -287,7 +274,12 @@ export function PlanPage() {
     // Initial check
     updateActiveSection()
 
-    return () => container.removeEventListener("scroll", updateActiveSection)
+    return () => {
+      container.removeEventListener("scroll", updateActiveSection)
+      if (autoScrollTimeoutRef.current) {
+        clearTimeout(autoScrollTimeoutRef.current)
+      }
+    }
   }, [planQuery.data?.sections, updateActiveSection])
 
   const handleSectionClick = useCallback((sectionId: string) => {
@@ -297,6 +289,15 @@ export function PlanPage() {
       const elementRect = element.getBoundingClientRect()
       const containerRect = container.getBoundingClientRect()
 
+      // Cancel any existing timeout
+      if (autoScrollTimeoutRef.current) {
+        clearTimeout(autoScrollTimeoutRef.current)
+      }
+
+      // Set lock to prevent scrollspy from interfering
+      isAutoScrollingRef.current = true
+      setActiveSectionId(sectionId)
+
       // Scroll element to 80px from top of container
       const scrollOffset = elementRect.top - containerRect.top - 80
 
@@ -305,7 +306,10 @@ export function PlanPage() {
         behavior: "smooth",
       })
 
-      setActiveSectionId(sectionId)
+      // Release lock after animation completes (500ms for smooth scroll)
+      autoScrollTimeoutRef.current = setTimeout(() => {
+        isAutoScrollingRef.current = false
+      }, 500)
     }
   }, [])
 
@@ -329,7 +333,7 @@ export function PlanPage() {
       {/* Scrollable Right Pane - Everything scrolls together */}
       <div
         ref={scrollContainerRef}
-        className="h-full overflow-y-auto custom-scrollbar scroll-smooth pr-2"
+        className="h-full overflow-y-auto custom-scrollbar pr-2"
       >
         <div className="space-y-4 pb-6">
           {/* Title */}
