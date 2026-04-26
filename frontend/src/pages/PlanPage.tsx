@@ -185,6 +185,7 @@ export function PlanPage() {
   const { planId } = useParams()
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
+  const lastScrollPosition = useRef(0)
 
   const planQuery = useQuery({
     queryKey: queryKeys.plans.detail(planId || ""),
@@ -215,41 +216,62 @@ export function PlanPage() {
     staleTime: 60_000,
   })
 
-  // Track active section on scroll
+  // Track active section on scroll with hysteresis to prevent jumping
   const updateActiveSection = useCallback(() => {
     if (!planQuery.data?.sections?.length || !scrollContainerRef.current) return
 
     const container = scrollContainerRef.current
-    const containerRect = container.getBoundingClientRect()
-    // Activation point is 25% from top of viewport
-    const activationPoint = containerRect.top + containerRect.height * 0.25
+    const scrollTop = container.scrollTop
+    const scrollDirection = scrollTop > lastScrollPosition.current ? "down" : "up"
+    lastScrollPosition.current = scrollTop
 
-    let closestSection: { id: string; distance: number } | null = null
-
-    planQuery.data.sections.forEach((section) => {
+    // Get all section elements and their positions
+    const sections = planQuery.data.sections.map((section) => {
       const element = document.getElementById(`section-${section.id}`)
-      if (!element) return
-
+      if (!element) return { id: section.id, top: Infinity, bottom: Infinity }
       const rect = element.getBoundingClientRect()
-      // Section is "active" if its top is at or below the activation point
-      const distance = rect.top - activationPoint
-
-      if (distance <= 0) {
-        // This section is above or at the activation point
-        if (!closestSection || distance > closestSection.distance) {
-          // Choose the one closest to activation point (least negative or zero)
-          closestSection = { id: section.id, distance }
-        }
+      const containerRect = container.getBoundingClientRect()
+      return {
+        id: section.id,
+        top: rect.top - containerRect.top + scrollTop,
+        bottom: rect.bottom - containerRect.top + scrollTop,
       }
     })
 
-    // If no section is above activation point, we're at the top - use first section
-    if (!closestSection && planQuery.data.sections.length > 0) {
-      closestSection = { id: planQuery.data.sections[0].id, distance: 0 }
+    // Activation point is 120px from top (gives room for sticky header if any)
+    const activationOffset = scrollTop + 120
+
+    let newActiveId: string | null = null
+
+    if (scrollDirection === "down") {
+      // When scrolling down, activate section whose TOP just crossed the line
+      for (let i = sections.length - 1; i >= 0; i--) {
+        if (sections[i].top <= activationOffset) {
+          newActiveId = sections[i].id
+          break
+        }
+      }
+    } else {
+      // When scrolling up, activate section whose TOP is just above the line
+      for (let i = 0; i < sections.length; i++) {
+        if (sections[i].top >= activationOffset - 50) {
+          // Within 50px above
+          newActiveId = sections[i].id
+          break
+        }
+        if (sections[i].top <= activationOffset) {
+          newActiveId = sections[i].id
+        }
+      }
     }
 
-    if (closestSection && closestSection.id !== activeSectionId) {
-      setActiveSectionId(closestSection.id)
+    // Default to first section if nothing found
+    if (!newActiveId && sections.length > 0) {
+      newActiveId = sections[0].id
+    }
+
+    if (newActiveId && newActiveId !== activeSectionId) {
+      setActiveSectionId(newActiveId)
     }
   }, [planQuery.data?.sections, activeSectionId])
 
@@ -272,11 +294,11 @@ export function PlanPage() {
     const element = document.getElementById(`section-${sectionId}`)
     if (element && scrollContainerRef.current) {
       const container = scrollContainerRef.current
-      const containerRect = container.getBoundingClientRect()
       const elementRect = element.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
 
-      // Calculate scroll position to bring element to 20% from top of container
-      const scrollOffset = elementRect.top - containerRect.top - containerRect.height * 0.2
+      // Scroll element to 80px from top of container
+      const scrollOffset = elementRect.top - containerRect.top - 80
 
       container.scrollTo({
         top: container.scrollTop + scrollOffset,
@@ -294,17 +316,29 @@ export function PlanPage() {
   const plan = planQuery.data
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)] lg:h-[calc(100vh-4rem)] lg:min-h-0">
-      <PlanSectionNav
-        sections={plan.sections ?? []}
-        activeSectionId={activeSectionId}
-        onSectionClick={handleSectionClick}
-      />
-      <section className="flex flex-col lg:min-h-0 h-full">
-        {/* Header - Stays visible */}
-        <div className="space-y-4 shrink-0">
+    <div className="grid items-start gap-4 lg:grid-cols-[260px_1fr] lg:h-[calc(100vh-4rem)] lg:min-h-0">
+      {/* Fixed Left Sidebar */}
+      <div className="hidden lg:block h-full">
+        <PlanSectionNav
+          sections={plan.sections ?? []}
+          activeSectionId={activeSectionId}
+          onSectionClick={handleSectionClick}
+        />
+      </div>
+
+      {/* Scrollable Right Pane - Everything scrolls together */}
+      <div
+        ref={scrollContainerRef}
+        className="h-full overflow-y-auto custom-scrollbar scroll-smooth pr-2"
+      >
+        <div className="space-y-4 pb-6">
+          {/* Title */}
           <h2 className="text-3xl font-semibold tracking-tight">{plan.title}</h2>
+
+          {/* Summary Cards */}
           <PlanSummaryCards plan={plan} />
+
+          {/* Executive Summary */}
           <Card className="rounded-2xl border-border/70">
             <CardHeader>
               <CardTitle>Executive summary</CardTitle>
@@ -317,129 +351,129 @@ export function PlanPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Scrollable Content Area */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 lg:min-h-0 lg:overflow-y-auto custom-scrollbar lg:pr-2 mt-4 scroll-smooth"
-        >
-          <div className="space-y-4 pb-4">
+          {/* Protocol */}
+          <Card className="rounded-2xl border-border/70">
+            <CardHeader>
+              <CardTitle>Protocol</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(plan.protocol_steps ?? []).map((step) => (
+                <ProtocolStepCard key={step.id} step={step} />
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Generated Sections */}
+          {(plan.sections ?? []).length ? (
             <Card className="rounded-2xl border-border/70">
               <CardHeader>
-                <CardTitle>Protocol</CardTitle>
+                <CardTitle>Generated sections</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {(plan.protocol_steps ?? []).map((step) => (
-                  <ProtocolStepCard key={step.id} step={step} />
-                ))}
+              <CardContent className="space-y-4">
+              {(plan.sections ?? []).map((section) => {
+                const formattedContent = formatSectionContent({
+                  key: section.key,
+                  title: section.title,
+                  content_markdown: section.content_markdown,
+                  content_json: section.content_json || {},
+                  needs_review: section.needs_review
+                })
+                return (
+                  <article key={section.id} id={`section-${section.id}`} className="scroll-mt-24 rounded-xl border border-border/70 bg-background/60 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold">{section.title}</h4>
+                      {section.needs_review && (
+                        <Badge variant="warning" className="text-[10px]">Needs Review</Badge>
+                      )}
+                    </div>
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      {formattedContent.split("\n").map((line, i) => {
+                        // Render bold text
+                        if (line.startsWith("**") && line.includes(":**")) {
+                          const [label, ...rest] = line.split(":**")
+                          return (
+                            <p key={i} className="text-sm my-1">
+                              <span className="font-semibold">{label.replace(/^\*\*/, "")}:</span>
+                              {rest.join(":**").replace(/\*\*$/, "")}
+                            </p>
+                          )
+                        }
+                        // Render bullet points
+                        if (line.startsWith("- ")) {
+                          return (
+                            <p key={i} className="text-sm my-1 ml-4">
+                              • {line.replace(/^- /, "").replace(/\*\*/g, "")}
+                            </p>
+                          )
+                        }
+                        // Render headers (numbered steps)
+                        if (line.match(/^\*\*\d+\./)) {
+                          return <h5 key={i} className="text-sm font-semibold mt-3 mb-1">{line.replace(/\*\*/g, "")}</h5>
+                        }
+                        // Render sub-headers
+                        if (line.startsWith("**") && line.endsWith("**")) {
+                          return <h5 key={i} className="text-sm font-semibold mt-3 mb-1">{line.replace(/\*\*/g, "")}</h5>
+                        }
+                        // Render italic/notes
+                        if (line.startsWith("*") && line.endsWith("*")) {
+                          return <p key={i} className="text-xs text-muted-foreground italic my-1">{line.replace(/\*/g, "")}</p>
+                        }
+                        // Render blockquotes (warnings)
+                        if (line.startsWith(">")) {
+                          return (
+                            <blockquote key={i} className="text-sm border-l-2 border-amber-500 pl-3 my-2 text-muted-foreground">
+                              {line.replace(/^>\s*/, "").replace(/\*\*/g, "")}
+                            </blockquote>
+                          )
+                        }
+                        // Regular text
+                        if (line.trim()) {
+                          return <p key={i} className="text-sm text-muted-foreground my-1">{line.replace(/\*\*/g, "")}</p>
+                        }
+                        return null
+                      })}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 border-t border-border/70 mt-3 pt-2 text-xs text-muted-foreground">
+                      <span className="font-mono">ID: {section.key}</span>
+                      {"confidence" in section && section.confidence != null && (
+                        <span className="font-mono">Confidence: {Math.round(Number(section.confidence) * 100)}%</span>
+                      )}
+                    </div>
+                  </article>
+                )
+              })}
               </CardContent>
             </Card>
-            {(plan.sections ?? []).length ? (
-              <Card className="rounded-2xl border-border/70">
-                <CardHeader>
-                  <CardTitle>Generated sections</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                {(plan.sections ?? []).map((section) => {
-                  const formattedContent = formatSectionContent({
-                    key: section.key,
-                    title: section.title,
-                    content_markdown: section.content_markdown,
-                    content_json: section.content_json || {},
-                    needs_review: section.needs_review
-                  })
-                  return (
-                    <article key={section.id} id={`section-${section.id}`} className="scroll-mt-20 rounded-xl border border-border/70 bg-background/60 p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold">{section.title}</h4>
-                        {section.needs_review && (
-                          <Badge variant="warning" className="text-[10px]">Needs Review</Badge>
-                        )}
-                      </div>
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        {formattedContent.split("\n").map((line, i) => {
-                          // Render bold text
-                          if (line.startsWith("**") && line.includes(":**")) {
-                            const [label, ...rest] = line.split(":**")
-                            return (
-                              <p key={i} className="text-sm my-1">
-                                <span className="font-semibold">{label.replace(/^\*\*/, "")}:</span>
-                                {rest.join(":**").replace(/\*\*$/, "")}
-                              </p>
-                            )
-                          }
-                          // Render bullet points
-                          if (line.startsWith("- ")) {
-                            return (
-                              <p key={i} className="text-sm my-1 ml-4">
-                                • {line.replace(/^- /, "").replace(/\*\*/g, "")}
-                              </p>
-                            )
-                          }
-                          // Render headers (numbered steps)
-                          if (line.match(/^\*\*\d+\./)) {
-                            return <h5 key={i} className="text-sm font-semibold mt-3 mb-1">{line.replace(/\*\*/g, "")}</h5>
-                          }
-                          // Render sub-headers
-                          if (line.startsWith("**") && line.endsWith("**")) {
-                            return <h5 key={i} className="text-sm font-semibold mt-3 mb-1">{line.replace(/\*\*/g, "")}</h5>
-                          }
-                          // Render italic/notes
-                          if (line.startsWith("*") && line.endsWith("*")) {
-                            return <p key={i} className="text-xs text-muted-foreground italic my-1">{line.replace(/\*/g, "")}</p>
-                          }
-                          // Render blockquotes (warnings)
-                          if (line.startsWith(">")) {
-                            return (
-                              <blockquote key={i} className="text-sm border-l-2 border-amber-500 pl-3 my-2 text-muted-foreground">
-                                {line.replace(/^>\s*/, "").replace(/\*\*/g, "")}
-                              </blockquote>
-                            )
-                          }
-                          // Regular text
-                          if (line.trim()) {
-                            return <p key={i} className="text-sm text-muted-foreground my-1">{line.replace(/\*\*/g, "")}</p>
-                          }
-                          return null
-                        })}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 border-t border-border/70 mt-3 pt-2 text-xs text-muted-foreground">
-                        <span className="font-mono">ID: {section.key}</span>
-                        {"confidence" in section && section.confidence != null && (
-                          <span className="font-mono">Confidence: {Math.round(Number(section.confidence) * 100)}%</span>
-                        )}
-                      </div>
-                    </article>
-                  )
-                })}
-                </CardContent>
-              </Card>
-            ) : null}
-            {materialsQuery.data ? <MaterialsTable materials={materialsQuery.data} /> : null}
-            {budgetQuery.data ? <BudgetTable lines={budgetQuery.data} /> : null}
-            {timelineQuery.data ? <TimelineView phases={timelineQuery.data} /> : null}
-            <ValidationPanel validation={((plan.plan_json ?? {}).validation as Record<string, unknown>) || {}} />
-            <SafetyPanel risks={((plan.plan_json ?? {}).risks_and_safety as unknown[]) || []} />
+          ) : null}
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Button asChild variant="outline">
-                <Link to={`/plans/${plan.id}/review`}>Open Scientist Review</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <a href={`/api/plans/${plan.id}/export/markdown/`} target="_blank" rel="noreferrer">
-                  Export Markdown
-                </a>
-              </Button>
-              <Button asChild variant="outline">
-                <a href={`/api/plans/${planId}/export/materials.csv`} target="_blank" rel="noreferrer">
-                  Export Materials CSV
-                </a>
-              </Button>
-            </div>
+          {/* Materials, Budget, Timeline */}
+          {materialsQuery.data ? <MaterialsTable materials={materialsQuery.data} /> : null}
+          {budgetQuery.data ? <BudgetTable lines={budgetQuery.data} /> : null}
+          {timelineQuery.data ? <TimelineView phases={timelineQuery.data} /> : null}
+
+          {/* Validation & Safety */}
+          <ValidationPanel validation={((plan.plan_json ?? {}).validation as Record<string, unknown>) || {}} />
+          <SafetyPanel risks={((plan.plan_json ?? {}).risks_and_safety as unknown[]) || []} />
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            <Button asChild variant="outline">
+              <Link to={`/plans/${plan.id}/review`}>Open Scientist Review</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <a href={`/api/plans/${plan.id}/export/markdown/`} target="_blank" rel="noreferrer">
+                Export Markdown
+              </a>
+            </Button>
+            <Button asChild variant="outline">
+              <a href={`/api/plans/${planId}/export/materials.csv`} target="_blank" rel="noreferrer">
+                Export Materials CSV
+              </a>
+            </Button>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   )
 }

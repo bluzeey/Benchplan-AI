@@ -17,12 +17,12 @@ export function PlanSectionNav({ sections, activeSectionId, onSectionClick }: Pl
   }
 
   return (
-    <Card className="sticky top-0 self-start hidden h-[calc(100vh-4rem)] overflow-y-auto rounded-2xl lg:block shrink-0">
-      <CardHeader className="pb-3 shrink-0">
+    <Card className="h-full overflow-y-auto rounded-2xl">
+      <CardHeader className="pb-3 shrink-0 sticky top-0 bg-card z-10 border-b border-border/40">
         <CardTitle className="text-base">Sections</CardTitle>
         <p className="text-sm text-muted-foreground">Jump to generated modules</p>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-2 pt-4">
         {sections.length === 0 ? <p className="font-mono text-xs text-muted-foreground">No structured sections found</p> : null}
         {sections.map((section, index) => {
           const isActive = activeSectionId === section.id
