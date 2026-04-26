@@ -83,30 +83,38 @@ export function RunPage() {
   return (
     <div className="space-y-4">
       <h2 className="text-3xl font-semibold tracking-tight">Live run</h2>
-      {runQuery.data ? (
-        <Card className="rounded-2xl border-border/70">
-          <CardHeader className="space-y-2">
-            <CardTitle>Status</CardTitle>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="font-mono">Run state: {runQuery.data.status}</span>
-              <span className="font-mono">Events: {(runQuery.data.events ?? []).length}</span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="mask-fade-bottom max-h-64 space-y-2 overflow-auto rounded-xl border border-border/70 bg-background/50 p-3">
-            {(runQuery.data.events ?? []).map((event) => (
-              <p key={event.id} className="font-mono text-xs text-muted-foreground">
-                {event.created_at} - {event.label}
-              </p>
-            ))}
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
 
-      {qcQuery.data ? <LiteratureQcCard run={qcQuery.data} /> : null}
+      {/* Top row: Live Run Status and Literature QC side by side on desktop */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Live Run Status Card */}
+        {runQuery.data ? (
+          <Card className="rounded-2xl border-border/70">
+            <CardHeader className="space-y-2">
+              <CardTitle>Status</CardTitle>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span className="font-mono">Run state: {runQuery.data.status}</span>
+                <span className="font-mono">Events: {(runQuery.data.events ?? []).length}</span>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="mask-fade-bottom max-h-64 space-y-2 overflow-auto rounded-xl border border-border/70 bg-background/50 p-3">
+              {(runQuery.data.events ?? []).map((event) => (
+                <p key={event.id} className="font-mono text-xs text-muted-foreground">
+                  {event.created_at} - {event.label}
+                </p>
+              ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="hidden lg:block" /> /* Spacer for alignment when no run data */
+        )}
 
-      {/* Plan Status Card - shown when generating or when we have a plan */}
+        {/* Literature QC Card */}
+        {qcQuery.data ? <LiteratureQcCard run={qcQuery.data} /> : null}
+      </div>
+
+      {/* Plan Status Card - full width, shown when generating or when we have a plan */}
       {(planStatus || currentPlanId) && (
         <Card className="rounded-2xl border-border/70">
           <CardHeader className="space-y-2">
@@ -143,6 +151,7 @@ export function RunPage() {
         </Card>
       )}
 
+      {/* Generate Plan Button - full width */}
       {qcQuery.data?.status === "completed" && !currentPlanId && !generatePlan.isPending ? (
         <Button onClick={() => generatePlan.mutate()} disabled={generatePlan.isPending}>
           {generatePlan.isPending ? "Generating..." : "Generate Experiment Plan"}

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import uuid
 from decimal import Decimal
+from typing import Any
 
 from django.utils import timezone
 
@@ -22,6 +24,22 @@ from .llm_gateway import llm_gateway
 from .models import AgentEvent, AgentRun
 from .prompts import INPUT_PARSER_PROMPT
 from .schemas import ParsedHypothesis
+
+
+def make_json_safe(obj: Any) -> Any:
+    """
+    Recursively convert objects to JSON-safe types.
+    Converts UUID to str, Decimal to float, and datetime to ISO format str.
+    """
+    if isinstance(obj, uuid.UUID):
+        return str(obj)
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, dict):
+        return {k: make_json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [make_json_safe(item) for item in obj]
+    return obj
 
 
 def parse_hypothesis(raw_text: str) -> dict:
@@ -198,7 +216,9 @@ def generate_plan_from_qc(qc_run_id: str, agent_run_id: str, plan_id: str) -> Ex
     plan = ExperimentPlan.objects.get(id=plan_id)
 
     parsed = question.parsed_json or parse_hypothesis(question.raw_text)
-    references = list(qc_run.references.values("id", "title", "source", "year", "doi", "url", "relevance_score", "why_relevant"))
+    # Fetch references and convert to JSON-safe types (UUID -> str, Decimal -> float)
+    raw_references = list(qc_run.references.values("id", "title", "source", "year", "doi", "url", "relevance_score", "why_relevant"))
+    references = make_json_safe(raw_references)
 
     _add_event(agent_run, "Generating protocol")
     protocol = generate_protocol_outline(parsed)
@@ -243,7 +263,7 @@ def generate_plan_from_qc(qc_run_id: str, agent_run_id: str, plan_id: str) -> Ex
             "inclusion_exclusion_criteria": "To be defined by scientist",
         },
         "protocol": protocol,
-        "materials": [{**m, "catalog_note": "Catalog number requires buyer verification."} for m in materials],
+        "materials": [make_json_safe({**m, "catalog_note": "Catalog number requires buyer verification."}) for m in materials],
         "budget": [{k: (str(v) if isinstance(v, Decimal) else v) for k, v in line.items()} for line in budget_lines],
         "timeline": timeline,
         "validation": validation,
@@ -268,10 +288,11 @@ def generate_plan_from_qc(qc_run_id: str, agent_run_id: str, plan_id: str) -> Ex
         plan_json["assumptions"].append("Evidence coverage is limited; major steps need scientist verification.")
 
     # Update the existing plan with all the generated data
+    # Ensure all data is JSON-safe before saving (UUID -> str, Decimal -> float)
     plan.title = plan_json["title"]
     plan.status = "completed"
     plan.executive_summary = plan_json["executive_summary"]
-    plan.plan_json = plan_json
+    plan.plan_json = make_json_safe(plan_json)
     plan.estimated_budget_min = budget_totals["total_min"]
     plan.estimated_budget_max = budget_totals["total_max"]
     plan.estimated_duration_weeks_min = 8
@@ -299,7 +320,9 @@ def generate_plan_from_qc(qc_run_id: str, agent_run_id: str, plan_id: str) -> Ex
         ("references", "References", 10, {"references": references}),
     ]
     for key, title, order, content in section_specs:
-        PlanSection.objects.create(plan=plan, key=key, title=title, order=order, content_json=content, content_markdown=str(content), confidence=Decimal("0.65"), needs_review=True)
+        # Ensure content is JSON-safe before saving to content_json field
+        safe_content = make_json_safe(content)
+        PlanSection.objects.create(plan=plan, key=key, title=title, order=order, content_json=safe_content, content_markdown=str(content), confidence=Decimal("0.65"), needs_review=True)
 
     for step in protocol:
         ProtocolStep.objects.create(
