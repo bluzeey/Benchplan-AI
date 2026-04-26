@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   Home,
   FolderOpen,
@@ -13,7 +14,6 @@ import {
   LogOut,
   FlaskConical,
   Microscope,
-  Leaf,
   Snowflake,
   Sun,
   Dna,
@@ -25,6 +25,7 @@ import { apiFetch } from "@/lib/api"
 import { useAuth } from "@/app/auth-provider"
 import { ExperimentPlanSchema } from "@/lib/schemas"
 import { z } from "zod"
+import { fadeInLeft, staggerContainer, staggerItem, hoverLift } from "@/lib/motion"
 
 const PlansListSchema = z.array(ExperimentPlanSchema)
 
@@ -71,6 +72,146 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString()
 }
 
+// Animated nav item component
+function NavItem({
+  item,
+  collapsed,
+  isActive,
+}: {
+  item: (typeof nav)[0]
+  collapsed: boolean
+  isActive: boolean
+}) {
+  const Icon = item.icon
+
+  return (
+    <motion.div
+      whileHover={{ x: 2 }}
+      whileTap={{ scale: 0.98 }}
+      className="relative"
+    >
+      <Link
+        to={item.to}
+        className={cn(
+          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+          "relative overflow-hidden",
+          isActive
+            ? "bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-foreground shadow-lg shadow-cyan-500/10"
+            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+          collapsed && "justify-center px-2"
+        )}
+      >
+        {/* Active indicator glow */}
+        {isActive && (
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-purple-500/10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            layoutId="activeNavGlow"
+          />
+        )}
+
+        {/* Left accent bar for active state */}
+        {isActive && (
+          <motion.div
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-cyan-400 to-purple-500 rounded-full"
+            initial={{ opacity: 0, scaleY: 0 }}
+            animate={{ opacity: 1, scaleY: 1 }}
+            layoutId="activeNavIndicator"
+          />
+        )}
+
+        <span className={cn(
+          "relative z-10 flex items-center justify-center w-5 h-5",
+          isActive && "text-cyan-400"
+        )}>
+          <Icon className="h-[18px] w-[18px]" />
+        </span>
+
+        <AnimatePresence mode="wait">
+          {!collapsed && (
+            <motion.span
+              className="relative z-10 whitespace-nowrap"
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: "auto" }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {item.label}
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </Link>
+    </motion.div>
+  )
+}
+
+// Animated recent plan item
+function RecentPlanItem({
+  plan,
+  collapsed,
+}: {
+  plan: {
+    id: string
+    title: string
+    status: string
+    updated_at?: string
+  }
+  collapsed: boolean
+}) {
+  const navigate = useNavigate()
+  const statusColors: Record<string, string> = {
+    generating: "text-blue-400",
+    completed: "text-green-400",
+    draft: "text-gray-400",
+    error: "text-red-400",
+  }
+  const colorClass = statusColors[plan.status] || "text-cyan-400"
+  const statusLabel =
+    plan.status === "generating"
+      ? "In Progress"
+      : plan.status === "completed"
+      ? "Ready"
+      : plan.status === "error"
+      ? "Failed"
+      : plan.status
+
+  return (
+    <motion.button
+      onClick={() => navigate(`/plans/${plan.id}`)}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-all duration-200",
+        "hover:bg-accent/50 group"
+      )}
+      whileHover={{ x: 2 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <motion.div
+        className={cn(
+          "flex h-8 w-8 items-center justify-center rounded-lg bg-muted transition-all duration-200",
+          "group-hover:shadow-md group-hover:shadow-cyan-500/10",
+          colorClass
+        )}
+        whileHover={{ scale: 1.05 }}
+      >
+        <FileText className="h-4 w-4" />
+      </motion.div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-foreground text-sm">{plan.title}</p>
+        <p className="text-xs text-muted-foreground">
+          <span className={cn("transition-colors", colorClass)}>{statusLabel}</span>
+          {plan.updated_at ? (
+            <>
+              {" "}
+              <span className="opacity-50">•</span> {formatRelativeTime(plan.updated_at)}
+            </>
+          ) : null}
+        </p>
+      </div>
+    </motion.button>
+  )
+}
+
 export function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -84,7 +225,6 @@ export function Sidebar() {
 
   const handleLogout = async () => {
     await logout()
-    // Navigation will happen automatically via PublicOnlyLayout redirect
   }
 
   const userInitials = user
@@ -92,151 +232,208 @@ export function Sidebar() {
     : "U"
 
   return (
-    <aside
+    <motion.aside
       className={cn(
-        "flex h-screen flex-col border-r border-border bg-background transition-all duration-300",
-        collapsed ? "w-16" : "w-64"
+        "flex h-screen flex-col glass-strong relative z-30",
+        collapsed ? "w-20" : "w-72"
       )}
+      initial={false}
+      animate={{ width: collapsed ? 80 : 288 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
     >
+      {/* Gradient background accent */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 -right-32 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
+      </div>
+
       {/* Header */}
-      <div className="flex h-16 items-center justify-between px-4">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
+      <div className="relative flex h-16 items-center justify-between px-4 border-b border-border/50">
+        <AnimatePresence mode="wait">
+          {!collapsed && (
+            <motion.div
+              className="flex items-center gap-3"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <motion.div
+                className="flex h-9 w-9 items-center justify-center rounded-xl"
+                whileHover={{ scale: 1.05, rotate: 5 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <defs>
-                  <linearGradient id="sidebarFlask" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#22d3ee" />
-                    <stop offset="100%" stopColor="#a855f7" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M9 3L7 9H17L15 3H9Z"
-                  stroke="url(#sidebarFlask)"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M6 9L4 16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16L18 9"
-                  stroke="url(#sidebarFlask)"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <span className="font-semibold text-foreground">BenchPlan AI</span>
-          </div>
-        )}
-        <button
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="h-7 w-7"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <defs>
+                    <linearGradient id="sidebarFlask" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#22d3ee" />
+                      <stop offset="100%" stopColor="#a855f7" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M9 3L7 9H17L15 3H9Z"
+                    stroke="url(#sidebarFlask)"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6 9L4 16C4 18.2091 5.79086 20 8 20H16C18.2091 20 20 18.2091 20 16L18 9"
+                    stroke="url(#sidebarFlask)"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </motion.div>
+              <span className="font-display font-semibold text-foreground tracking-tight">
+                BenchPlan AI
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.button
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+            "flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-all duration-200",
+            "hover:bg-accent hover:text-foreground",
             collapsed && "mx-auto"
           )}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </button>
+          <motion.div
+            initial={false}
+            animate={{ rotate: collapsed ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </motion.div>
+        </motion.button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        {nav.map((item) => {
-          const Icon = item.icon
-          // Active if exact match or if pathname starts with item.to + "/"
-          // This ensures /projects matches /projects/new and /projects/:id
-          const active = location.pathname === item.to ||
-            (item.to !== "/" && location.pathname.startsWith(item.to + "/"))
-          return (
-            <Link
-              key={item.label}
-              to={item.to}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                active
-                  ? "bg-accent text-foreground font-medium"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
-                collapsed && "justify-center px-2"
-              )}
-            >
-              <Icon className="h-4 w-4 flex-shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          )
-        })}
+      <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto custom-scrollbar">
+        <motion.div
+          className="space-y-1"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+        >
+          {nav.map((item) => {
+            const active =
+              location.pathname === item.to ||
+              (item.to !== "/" && location.pathname.startsWith(item.to + "/"))
+
+            return (
+              <motion.div key={item.label} variants={staggerItem}>
+                <NavItem item={item} collapsed={collapsed} isActive={active} />
+              </motion.div>
+            )
+          })}
+        </motion.div>
 
         {/* Recent Plans */}
-        {!collapsed && (
-          <div className="mt-6">
-            <div className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
-              Recent Plans
-            </div>
-            <div className="space-y-1">
-              {recentPlans.slice(0, 5).map((plan) => {
-                // Status color mapping
-                const statusColors: Record<string, string> = {
-                  generating: "text-blue-400",
-                  completed: "text-green-400",
-                  draft: "text-gray-400",
-                  error: "text-red-400",
-                }
-                const colorClass = statusColors[plan.status] || "text-cyan-400"
-                const statusLabel = plan.status === "generating" ? "In Progress" :
-                                   plan.status === "completed" ? "Ready" :
-                                   plan.status === "error" ? "Failed" : plan.status
-
-                return (
-                  <button
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.div
+              className="mt-8"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.div
+                className="mb-3 px-3 flex items-center justify-between"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
+                  Recent Plans
+                </span>
+                <span className="text-[10px] text-muted-foreground/50 bg-muted px-2 py-0.5 rounded-full">
+                  {recentPlans.length}
+                </span>
+              </motion.div>
+              <motion.div
+                className="space-y-1"
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+              >
+                {recentPlans.slice(0, 5).map((plan, index) => (
+                  <motion.div
                     key={plan.id}
-                    onClick={() => navigate(`/plans/${plan.id}`)}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-accent/60"
+                    variants={fadeInLeft}
+                    custom={index}
                   >
-                    <div className={cn("flex h-8 w-8 items-center justify-center rounded-md bg-muted", colorClass)}>
-                      <FileText className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-foreground">{plan.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        <span className={colorClass}>{statusLabel}</span>
-                        {plan.updated_at ? ` • ${formatRelativeTime(plan.updated_at)}` : null}
-                      </p>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
+                    <RecentPlanItem plan={plan} collapsed={collapsed} />
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* Footer - User */}
-      <div className="border-t border-border p-3">
-        <button
+      <div className="relative border-t border-border/50 p-3">
+        <motion.button
           onClick={handleLogout}
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
+            "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200",
+            "hover:bg-accent/50 group",
             collapsed && "justify-center px-2"
           )}
+          whileHover={{ x: 2 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
+          <motion.div
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium",
+              "bg-gradient-to-br from-cyan-500 to-purple-500 text-white shadow-lg",
+              "group-hover:shadow-cyan-500/30 transition-shadow duration-200"
+            )}
+            whileHover={{ scale: 1.05 }}
+          >
             {userInitials}
-          </div>
-          {!collapsed && (
-            <div className="flex min-w-0 flex-1 items-center justify-between">
-              <span className="truncate font-medium text-foreground">
-                {user?.full_name || "User"}
-              </span>
-              <LogOut className="h-4 w-4 text-muted-foreground" />
-            </div>
-          )}
-        </button>
+          </motion.div>
+          
+          <AnimatePresence mode="wait">
+            {!collapsed && (
+              <motion.div
+                className="flex min-w-0 flex-1 items-center justify-between"
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="flex flex-col min-w-0">
+                  <span className="truncate font-medium text-foreground text-sm">
+                    {user?.full_name || "User"}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {user?.email || ""}
+                  </span>
+                </div>
+                <motion.div
+                  whileHover={{ x: 2 }}
+                  className="text-muted-foreground/50"
+                >
+                  <LogOut className="h-4 w-4" />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
       </div>
-    </aside>
+    </motion.aside>
   )
 }
