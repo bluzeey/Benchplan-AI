@@ -21,12 +21,13 @@ def build_queries(hypothesis: str) -> list[str]:
     ]
 
 
-def run_literature_search(hypothesis: str) -> tuple[list[str], list[dict[str, Any]]]:
+def run_literature_search(hypothesis: str, max_results: int = 10) -> tuple[list[str], list[dict[str, Any]]]:
     queries = build_queries(hypothesis)
     collected: list[dict[str, Any]] = []
     semantic_key_present = bool(os.getenv("SEMANTIC_SCHOLAR_API_KEY", "").strip())
 
-    for query in queries[:2]:
+    # Use more queries for broader coverage
+    for query in queries[:4]:
         collected.extend(search_pubmed(query))
 
         semantic_results: list[dict[str, Any]] = []
@@ -55,4 +56,4 @@ def run_literature_search(hypothesis: str) -> tuple[list[str], list[dict[str, An
             continue
         seen.add(key)
         deduped.append(row)
-    return queries, deduped[:3]
+    return queries, deduped[:max_results]

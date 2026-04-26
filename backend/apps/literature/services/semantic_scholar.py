@@ -15,7 +15,7 @@ def search_semantic_scholar(query: str) -> list[dict[str, Any]]:
     headers = {"x-api-key": api_key}
     params = {
         "query": query,
-        "limit": 5,
+        "limit": 10,
         "fields": "title,year,url,externalIds,abstract",
     }
     response = httpx.get(url, headers=headers, params=params, timeout=15.0)

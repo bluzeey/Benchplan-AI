@@ -20,8 +20,8 @@ export function LiteratureQcCard({ run }: { run: Omit<LiteratureQcRun, "referenc
       <CardContent className="space-y-4">
         <p className="font-mono text-xs text-muted-foreground">Confidence: {fmtConfidence(confidence)}</p>
         <p className="text-sm text-muted-foreground">{run.summary || "Pending retrieval and evidence synthesis..."}</p>
-        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-          {(run.references ?? []).slice(0, 3).map((reference) => (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2">
+          {(run.references ?? []).slice(0, 8).map((reference) => (
             <ReferenceCard key={reference.id} reference={reference} />
           ))}
         </div>

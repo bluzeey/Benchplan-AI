@@ -88,79 +88,86 @@ export function RunPage() {
     <div className="space-y-4">
       <h2 className="text-3xl font-semibold tracking-tight">Live run</h2>
 
-      {/* Top row: Live Run Status and Literature QC side by side on desktop */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* Live Run Status Card */}
-        {runQuery.data ? (
-          <Card className="rounded-2xl border-border/70">
-            <CardHeader className="space-y-2">
-              <CardTitle>Status</CardTitle>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="font-mono">Run state: {runQuery.data.status}</span>
-                <span className="font-mono">Events: {(runQuery.data.events ?? []).length}</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="mask-fade-bottom max-h-64 space-y-2 overflow-auto rounded-xl border border-border/70 bg-background/50 p-3">
-              {(runQuery.data.events ?? []).map((event) => (
-                <p key={event.id} className="font-mono text-xs text-muted-foreground">
-                  {event.created_at} - {event.label}
-                </p>
-              ))}
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="hidden lg:block" /> /* Spacer for alignment when no run data */
-        )}
+      {/* Grid layout: Left column (Status + Plan), Right column (Literature QC) */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+        {/* Left Column: Status and Plan */}
+        <div className="space-y-4">
+          {/* Live Run Status Card */}
+          {runQuery.data ? (
+            <Card className="rounded-2xl border-border/70">
+              <CardHeader className="space-y-2">
+                <CardTitle>Status</CardTitle>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-mono">Run state: {runQuery.data.status}</span>
+                  <span className="font-mono">Events: {(runQuery.data.events ?? []).length}</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="mask-fade-bottom max-h-64 space-y-2 overflow-auto rounded-xl border border-border/70 bg-background/50 p-3">
+                {(runQuery.data.events ?? []).map((event) => (
+                  <p key={event.id} className="font-mono text-xs text-muted-foreground">
+                    {event.created_at} - {event.label}
+                  </p>
+                ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
-        {/* Literature QC Card */}
+          {/* Experiment Plan Card - shown when generating or when we have a plan */}
+          {qcQuery.data?.status === "completed" && !currentPlanId && !generatePlan.isPending ? (
+            <Card className="rounded-2xl border-border/70">
+              <CardHeader className="space-y-2">
+                <CardTitle>Experiment Plan</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={() => generatePlan.mutate()} disabled={generatePlan.isPending} className="w-full">
+                  {generatePlan.isPending ? "Generating..." : "Generate Experiment Plan"}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {(planStatus || currentPlanId) && (
+            <Card className="rounded-2xl border-border/70">
+              <CardHeader className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <CardTitle>Experiment Plan</CardTitle>
+                  {planStatus && (
+                    <Badge className={`${statusColors[planStatus] || "bg-gray-500"} text-white`}>
+                      {planStatus === "generating" ? "Generating..." : planStatus}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {planQuery.data ? (
+                  <>
+                    <p className="text-sm font-medium">{planQuery.data.title}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {planQuery.data.executive_summary}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Creating plan record...</p>
+                )}
+                {currentPlanId && (
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/plans/${currentPlanId}`}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      {planStatus === "completed" ? "View Plan" : "Open Current Plan"}
+                      <ExternalLink className="ml-2 h-3 w-3" />
+                    </Link>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Right Column: Literature QC */}
         {qcQuery.data ? <LiteratureQcCard run={qcQuery.data} /> : null}
       </div>
-
-      {/* Plan Status Card - full width, shown when generating or when we have a plan */}
-      {(planStatus || currentPlanId) && (
-        <Card className="rounded-2xl border-border/70">
-          <CardHeader className="space-y-2">
-            <div className="flex items-center gap-2">
-              <CardTitle>Experiment Plan</CardTitle>
-              {planStatus && (
-                <Badge className={`${statusColors[planStatus] || "bg-gray-500"} text-white`}>
-                  {planStatus === "generating" ? "Generating..." : planStatus}
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {planQuery.data ? (
-              <>
-                <p className="text-sm font-medium">{planQuery.data.title}</p>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {planQuery.data.executive_summary}
-                </p>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">Creating plan record...</p>
-            )}
-            {currentPlanId && (
-              <Button asChild variant="outline" size="sm">
-                <Link to={`/plans/${currentPlanId}`}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  {planStatus === "completed" ? "View Plan" : "Open Current Plan"}
-                  <ExternalLink className="ml-2 h-3 w-3" />
-                </Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Generate Plan Button - full width */}
-      {qcQuery.data?.status === "completed" && !currentPlanId && !generatePlan.isPending ? (
-        <Button onClick={() => generatePlan.mutate()} disabled={generatePlan.isPending}>
-          {generatePlan.isPending ? "Generating..." : "Generate Experiment Plan"}
-        </Button>
-      ) : null}
 
       {runQuery.error ? <p className="text-sm text-destructive">{(runQuery.error as Error).message}</p> : null}
       {qcQuery.error ? <p className="text-sm text-destructive">{(qcQuery.error as Error).message}</p> : null}

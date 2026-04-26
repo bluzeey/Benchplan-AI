@@ -30,7 +30,7 @@ def search_openalex(query: str) -> list[dict[str, Any]]:
 
     params = {
         "search": query,
-        "per-page": 5,
+        "per-page": 10,
         "select": "id,display_name,publication_year,doi,ids,primary_location",
     }
     if mailto:
