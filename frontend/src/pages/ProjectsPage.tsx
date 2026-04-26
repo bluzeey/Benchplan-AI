@@ -310,7 +310,7 @@ export function ProjectsPage() {
 
   // Unique domains for filter
   const domains = useMemo(() => {
-    const domainSet = new Set(projects.map((p) => p.domain).filter(Boolean))
+    const domainSet = new Set(projects.map((p) => p.domain).filter((d): d is string => Boolean(d)))
     return ["All Domains", ...Array.from(domainSet)]
   }, [projects])
 
@@ -513,14 +513,15 @@ export function ProjectsPage() {
                 ) : (
                   paginatedProjects.map((project) => {
                     const Icon = domainIcons[project.domain || ""] || FlaskConical
-                    const status = getProjectStatus(project.id)
-                    const projectPlans = plans.filter((p) => p.project === project.id)
-                    const isSelected = selectedProjectId === project.id
+                    const projectIdStr = String(project.id)
+                    const status = getProjectStatus(projectIdStr)
+                    const projectPlans = plans.filter((p) => p.project === projectIdStr)
+                    const isSelected = selectedProjectId === projectIdStr
 
                     return (
                       <tr
-                        key={project.id}
-                        onClick={() => setSelectedProjectId(project.id)}
+                        key={projectIdStr}
+                        onClick={() => setSelectedProjectId(projectIdStr)}
                         className={cn(
                           "border-b border-border/40 transition-colors cursor-pointer",
                           isSelected ? "bg-accent" : "hover:bg-accent/40"
@@ -657,11 +658,11 @@ export function ProjectsPage() {
                   variant="outline"
                   className={cn(
                     "mt-2 text-xs",
-                    statusColors[getProjectStatus(selectedProject.id)] || "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                    statusColors[getProjectStatus(String(selectedProject.id))] || "bg-gray-500/20 text-gray-400 border-gray-500/30"
                   )}
                 >
                   <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current" />
-                  {getProjectStatus(selectedProject.id)}
+                  {getProjectStatus(String(selectedProject.id))}
                 </Badge>
               </div>
             </CardHeader>

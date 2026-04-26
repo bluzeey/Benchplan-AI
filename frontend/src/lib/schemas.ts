@@ -129,6 +129,8 @@ export const ExperimentPlanSchema = z.object({
   sections: z.array(PlanSectionSchema).default([]),
   protocol_steps: z.array(ProtocolStepSchema).default([]),
   plan_json: z.record(z.string(), z.any()).default({}),
+  created_at: z.string().optional(),
+  updated_at: z.string().optional(),
 })
 
 export const MaterialSchema = z.object({
