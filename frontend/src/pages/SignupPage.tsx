@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { FlaskConical, Loader2 } from "lucide-react"
 
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { useAuth } from "@/app/auth-provider"
+import { ensureCsrfToken } from "@/lib/api"
 
 export function SignupPage() {
   const { signup, error } = useAuth()
@@ -22,6 +23,10 @@ export function SignupPage() {
 
   const displayError = error || formError
   const isDuplicateEmailError = displayError?.toLowerCase().includes("already exists")
+
+  useEffect(() => {
+    void ensureCsrfToken()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

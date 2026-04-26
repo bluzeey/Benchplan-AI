@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { FlaskConical, Loader2 } from "lucide-react"
 
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { useAuth } from "@/app/auth-provider"
+import { ensureCsrfToken } from "@/lib/api"
 
 export function LoginPage() {
   const { login, error } = useAuth()
@@ -15,6 +16,10 @@ export function LoginPage() {
     email: "",
     password: "",
   })
+
+  useEffect(() => {
+    void ensureCsrfToken()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

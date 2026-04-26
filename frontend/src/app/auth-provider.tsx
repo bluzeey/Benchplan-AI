@@ -52,19 +52,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check if user is already logged in on mount
   useEffect(() => {
+    let isMounted = true
+
     const checkAuth = async () => {
       try {
         const userData = await apiFetch("/api/auth/me/", UserSchema) as User
-        setUser(userData)
+        if (isMounted) {
+          setUser(userData)
+        }
       } catch {
         // User is not logged in, that's fine
-        setUser(null)
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     checkAuth()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const login = async (email: string, password: string): Promise<User> => {
@@ -80,8 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       const user = response.user as User
       setUser(user)
-      // Django rotates CSRF token on login - fetch new one
-      await refreshCsrfToken()
+      // Django rotates CSRF token on login - refresh in background
+      void refreshCsrfToken().catch((err) => {
+        console.error("Failed to refresh CSRF token after login:", err)
+      })
       toast.success("Welcome back!", {
         description: `Logged in as ${user.full_name}`,
       })
@@ -109,8 +120,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
       const user = response.user as User
       setUser(user)
-      // Django rotates CSRF token on signup/login - fetch new one
-      await refreshCsrfToken()
+      // Django rotates CSRF token on signup - refresh in background
+      void refreshCsrfToken().catch((err) => {
+        console.error("Failed to refresh CSRF token after signup:", err)
+      })
       toast.success("Account created!", {
         description: `Welcome, ${user.full_name}`,
       })

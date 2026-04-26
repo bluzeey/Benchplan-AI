@@ -4,6 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000
 
 // Store CSRF token in memory
 let csrfToken: string | null = null
+let csrfTokenRequest: Promise<string | null> | null = null
 
 // Helper to extract human-readable error message from DRF validation errors
 function extractErrorMessage(error: unknown, status: number): string {
@@ -44,14 +45,28 @@ function extractErrorMessage(error: unknown, status: number): string {
   return `Request failed: ${status}`
 }
 
+function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
+  if (!headers) return {}
+
+  const normalized: Record<string, string> = {}
+  const parsedHeaders = new Headers(headers)
+  parsedHeaders.forEach((value, key) => {
+    normalized[key] = value
+  })
+  return normalized
+}
+
+function hasHeader(headers: Record<string, string>, headerName: string): boolean {
+  const target = headerName.toLowerCase()
+  return Object.keys(headers).some((key) => key.toLowerCase() === target)
+}
+
 // Build headers - only include Content-Type when there's a body
 function buildHeaders(options: RequestInit, includeCsrf: boolean = false): Record<string, string> {
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string> || {}),
-  }
+  const headers = normalizeHeaders(options.headers)
 
   // Only add Content-Type if we're sending a body and it's not FormData
-  if (options.body && typeof options.body === "string") {
+  if (options.body && typeof options.body === "string" && !hasHeader(headers, "Content-Type")) {
     headers["Content-Type"] = "application/json"
   }
 
@@ -65,19 +80,42 @@ function buildHeaders(options: RequestInit, includeCsrf: boolean = false): Recor
 
 // Fetch CSRF token from backend
 async function fetchCsrfToken(): Promise<string | null> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/csrf/`, {
-      credentials: "include",
-    })
-    if (res.ok) {
-      const data = await res.json()
-      csrfToken = data.csrfToken || null
-      return csrfToken
-    }
-  } catch (e) {
-    console.error("Failed to fetch CSRF token:", e)
+  if (csrfToken) {
+    return csrfToken
   }
-  return null
+
+  if (csrfTokenRequest) {
+    return csrfTokenRequest
+  }
+
+  csrfTokenRequest = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/csrf/`, {
+        credentials: "include",
+      })
+      if (res.ok) {
+        const data = await res.json()
+        csrfToken = data.csrfToken || null
+        return csrfToken
+      }
+    } catch (e) {
+      console.error("Failed to fetch CSRF token:", e)
+    }
+    return null
+  })()
+
+  try {
+    return await csrfTokenRequest
+  } finally {
+    csrfTokenRequest = null
+  }
+}
+
+export async function ensureCsrfToken(): Promise<string | null> {
+  if (csrfToken) {
+    return csrfToken
+  }
+  return fetchCsrfToken()
 }
 
 // Determine if a request method needs CSRF protection
@@ -97,13 +135,13 @@ export async function apiFetch<T>(path: string, schema: z.ZodSchema<T>, options:
 
   // Fetch CSRF token if needed and not already have one
   if (includeCsrf && !csrfToken) {
-    await fetchCsrfToken()
+    await ensureCsrfToken()
   }
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
     credentials: "include",
     headers: buildHeaders(options, includeCsrf),
-    ...options,
   })
 
   if (!res.ok) {
@@ -129,13 +167,13 @@ export async function apiFetchRaw(path: string, options: RequestInit = {}, retry
 
   // Fetch CSRF token if needed and not already have one
   if (includeCsrf && !csrfToken) {
-    await fetchCsrfToken()
+    await ensureCsrfToken()
   }
 
   const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
     credentials: "include",
     headers: buildHeaders(options, includeCsrf),
-    ...options,
   })
 
   if (!res.ok) {
@@ -157,6 +195,7 @@ export async function apiFetchRaw(path: string, options: RequestInit = {}, retry
 // Reset CSRF token (call on logout)
 export function resetCsrfToken() {
   csrfToken = null
+  csrfTokenRequest = null
 }
 
 // Refresh CSRF token after login/signup (token gets rotated by Django)
