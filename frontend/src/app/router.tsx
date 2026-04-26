@@ -1,22 +1,31 @@
+import { lazy, Suspense } from "react"
 import { createBrowserRouter, Navigate, Outlet, useLocation } from "react-router-dom"
 import { useAuth } from "@/app/auth-provider"
 
 import { AppShell } from "@/components/layout/AppShell"
-import { AnalyticsPage } from "@/pages/AnalyticsPage"
-import { DashboardPage } from "@/pages/DashboardPage"
 import { LandingPage } from "@/pages/LandingPage"
 import { LoginPage } from "@/pages/LoginPage"
-import { NewProjectPage } from "@/pages/NewProjectPage"
-import { PlansPage } from "@/pages/PlansPage"
-import { PlanPage } from "@/pages/PlanPage"
-import { ProjectsPage } from "@/pages/ProjectsPage"
-import { ProjectPage } from "@/pages/ProjectPage"
-import { ReviewsPage } from "@/pages/ReviewsPage"
-import { ReviewPage } from "@/pages/ReviewPage"
-import { RunPage } from "@/pages/RunPage"
-import { SettingsPage } from "@/pages/SettingsPage"
-import { SettingsSourcesPage } from "@/pages/SettingsSourcesPage"
 import { SignupPage } from "@/pages/SignupPage"
+
+// Lazy loaded pages to improve performance
+const AnalyticsPage = lazy(() => import("@/pages/AnalyticsPage").then(m => ({ default: m.AnalyticsPage })))
+const DashboardPage = lazy(() => import("@/pages/DashboardPage").then(m => ({ default: m.DashboardPage })))
+const NewProjectPage = lazy(() => import("@/pages/NewProjectPage").then(m => ({ default: m.NewProjectPage })))
+const PlansPage = lazy(() => import("@/pages/PlansPage").then(m => ({ default: m.PlansPage })))
+const PlanPage = lazy(() => import("@/pages/PlanPage").then(m => ({ default: m.PlanPage })))
+const ProjectsPage = lazy(() => import("@/pages/ProjectsPage").then(m => ({ default: m.ProjectsPage })))
+const ProjectPage = lazy(() => import("@/pages/ProjectPage").then(m => ({ default: m.ProjectPage })))
+const ReviewsPage = lazy(() => import("@/pages/ReviewsPage").then(m => ({ default: m.ReviewsPage })))
+const ReviewPage = lazy(() => import("@/pages/ReviewPage").then(m => ({ default: m.ReviewPage })))
+const RunPage = lazy(() => import("@/pages/RunPage").then(m => ({ default: m.RunPage })))
+const SettingsPage = lazy(() => import("@/pages/SettingsPage").then(m => ({ default: m.SettingsPage })))
+const SettingsSourcesPage = lazy(() => import("@/pages/SettingsSourcesPage").then(m => ({ default: m.SettingsSourcesPage })))
+
+const LoadingPage = () => (
+  <div className="flex h-screen w-full items-center justify-center">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+  </div>
+)
 
 // Protected layout wrapper - uses Outlet to defer rendering
 function ProtectedLayout() {
@@ -37,7 +46,9 @@ function ProtectedLayout() {
 
   return (
     <AppShell>
-      <Outlet />
+      <Suspense fallback={<LoadingPage />}>
+        <Outlet />
+      </Suspense>
     </AppShell>
   )
 }

@@ -309,12 +309,7 @@ export function AnalyticsPage() {
   }
 
   return (
-    <motion.div
-      className="space-y-6"
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-    >
+    <div className="space-y-6">
       {/* Header */}
       <motion.div
         className="flex items-center justify-between"
@@ -701,6 +696,6 @@ export function AnalyticsPage() {
           </motion.div>
         </>
       )}
-    </motion.div>
+    </div>
   )
 }

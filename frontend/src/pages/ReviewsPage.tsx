@@ -168,12 +168,7 @@ export function ReviewsPage() {
   const totalAnnotations = reviews.reduce((sum, r) => sum + (r.annotation_count || 0), 0)
 
   return (
-    <motion.div
-      className="space-y-6"
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-    >
+    <div className="space-y-6">
       {/* Header */}
       <motion.div
         className="flex items-center justify-between"
@@ -332,6 +327,6 @@ export function ReviewsPage() {
           )}
         </motion.div>
       )}
-    </motion.div>
+    </div>
   )
 }

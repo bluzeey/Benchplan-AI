@@ -415,12 +415,7 @@ export function PlansPage() {
   const isLoading = plansQuery.isLoading
 
   return (
-    <motion.div
-      className="space-y-6"
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-    >
+    <div className="space-y-6">
       {/* Header */}
       <motion.div 
         className="flex items-center justify-between"
@@ -500,6 +495,6 @@ export function PlansPage() {
           ))}
         </motion.div>
       )}
-    </motion.div>
+    </div>
   )
 }
