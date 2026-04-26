@@ -2,6 +2,9 @@ import { z } from "zod"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
 
+// Store CSRF token in memory
+let csrfToken: string | null = null
+
 // Helper to extract human-readable error message from DRF validation errors
 function extractErrorMessage(error: unknown, status: number): string {
   if (!error || typeof error !== "object") {
@@ -42,7 +45,7 @@ function extractErrorMessage(error: unknown, status: number): string {
 }
 
 // Build headers - only include Content-Type when there's a body
-function buildHeaders(options: RequestInit): Record<string, string> {
+function buildHeaders(options: RequestInit, includeCsrf: boolean = false): Record<string, string> {
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string> || {}),
   }
@@ -52,13 +55,48 @@ function buildHeaders(options: RequestInit): Record<string, string> {
     headers["Content-Type"] = "application/json"
   }
 
+  // Add CSRF token for mutating requests
+  if (includeCsrf && csrfToken) {
+    headers["X-CSRFToken"] = csrfToken
+  }
+
   return headers
 }
 
+// Fetch CSRF token from backend
+async function fetchCsrfToken(): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/csrf/`, {
+      credentials: "include",
+    })
+    if (res.ok) {
+      const data = await res.json()
+      csrfToken = data.csrfToken || null
+      return csrfToken
+    }
+  } catch (e) {
+    console.error("Failed to fetch CSRF token:", e)
+  }
+  return null
+}
+
+// Determine if a request method needs CSRF protection
+function needsCsrf(method: string): boolean {
+  return ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase())
+}
+
 export async function apiFetch<T>(path: string, schema: z.ZodSchema<T>, options: RequestInit = {}): Promise<T> {
+  const method = options.method || "GET"
+  const includeCsrf = needsCsrf(method)
+
+  // Fetch CSRF token if needed and not already have one
+  if (includeCsrf && !csrfToken) {
+    await fetchCsrfToken()
+  }
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
-    headers: buildHeaders(options),
+    headers: buildHeaders(options, includeCsrf),
     ...options,
   })
 
@@ -72,9 +110,17 @@ export async function apiFetch<T>(path: string, schema: z.ZodSchema<T>, options:
 }
 
 export async function apiFetchRaw(path: string, options: RequestInit = {}) {
+  const method = options.method || "GET"
+  const includeCsrf = needsCsrf(method)
+
+  // Fetch CSRF token if needed and not already have one
+  if (includeCsrf && !csrfToken) {
+    await fetchCsrfToken()
+  }
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
-    headers: buildHeaders(options),
+    headers: buildHeaders(options, includeCsrf),
     ...options,
   })
 
@@ -84,6 +130,11 @@ export async function apiFetchRaw(path: string, options: RequestInit = {}) {
   }
 
   return res.json()
+}
+
+// Reset CSRF token (call on logout)
+export function resetCsrfToken() {
+  csrfToken = null
 }
 
 export { API_BASE_URL }

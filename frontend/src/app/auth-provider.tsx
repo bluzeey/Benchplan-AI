@@ -1,6 +1,6 @@
 import { ReactNode, createContext, useContext, useEffect, useState } from "react"
 import { z } from "zod"
-import { apiFetch, apiFetchRaw } from "@/lib/api"
+import { apiFetch, apiFetchRaw, resetCsrfToken } from "@/lib/api"
 
 const UserSchema = z.object({
   id: z.union([z.string(), z.number()]).transform((val) => String(val)),
@@ -111,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiFetchRaw("/api/auth/logout/", { method: "POST" })
     } finally {
       setUser(null)
+      resetCsrfToken()
     }
   }
 

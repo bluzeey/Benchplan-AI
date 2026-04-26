@@ -158,11 +158,17 @@ FIREWORKS_MODEL = os.getenv("FIREWORKS_MODEL", "accounts/fireworks/routers/kimi-
 
 # Security settings for production
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
-SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", False)
-CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", False)
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
+
+# Session & CSRF cookie settings for cross-domain authentication
+# In production with HTTPS, these should be Secure=True, SameSite=None
+SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", True)
+SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "None")
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", True)
+CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "None")
+CSRF_COOKIE_HTTPONLY = False  # Allow JS to read CSRF cookie for AJAX requests
 
 # Health check endpoint (used by Railway)
 HEALTH_CHECK_URL = "/api/health/"
