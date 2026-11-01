@@ -1,5 +1,7 @@
+from django.db import transaction
 from rest_framework import serializers
 
+from apps.common.private_storage import private_attachment_url, validate_attachment_size, validate_owned_upload_key
 from .models import ExperimentQuestion, Project, ProjectAttachment
 
 
@@ -20,10 +22,15 @@ class ExperimentQuestionSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "parsed_json", "created_at", "updated_at"]
+        read_only_fields = ["id", "project", "parsed_json", "created_at", "updated_at"]
 
 
 class ProjectAttachmentSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
+    def get_url(self, obj):
+        return private_attachment_url(obj)
+
     class Meta:
         model = ProjectAttachment
         fields = ["id", "name", "url", "content_type", "size", "created_at"]
@@ -41,6 +48,27 @@ class ProjectSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "owner", "owner_name", "questions", "attachments", "created_at", "updated_at"]
 
 
+class AttachmentSizeField(serializers.Field):
+    def to_internal_value(self, data):
+        try:
+            return validate_attachment_size(data)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
+
+
+class AttachmentInputSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    object_key = serializers.CharField(max_length=512, trim_whitespace=False)
+    type = serializers.CharField(max_length=128, required=False, allow_blank=True, default="application/octet-stream")
+    size = AttachmentSizeField()
+
+    def validate_object_key(self, value):
+        try:
+            return validate_owned_upload_key(value, self.context["request"].user)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
+
+
 class ProjectCreateSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=255, required=False, allow_blank=True)
     hypothesis = serializers.CharField(min_length=40)
@@ -48,11 +76,7 @@ class ProjectCreateSerializer(serializers.Serializer):
     currency = serializers.CharField(required=False, allow_blank=True)
     target_duration_weeks = serializers.IntegerField(required=False)
     lab_type = serializers.CharField(required=False, allow_blank=True)
-    attachments = serializers.ListField(
-        child=serializers.DictField(),
-        required=False,
-        default=list,
-    )
+    attachments = AttachmentInputSerializer(many=True, required=False, default=list)
 
     def _generate_project_title(self, hypothesis: str) -> str:
         """Generate a concise project title from the hypothesis."""
@@ -99,6 +123,7 @@ Rules:
 
         return hypothesis[:50].strip()
 
+    @transaction.atomic
     def create(self, validated_data):
         attachments_data = validated_data.pop("attachments", [])
         hypothesis = validated_data["hypothesis"]
@@ -111,7 +136,7 @@ Rules:
         project = Project.objects.create(
             title=title,
             domain=validated_data.get("domain", ""),
-            owner=self.context.get("request").user if self.context.get("request") and self.context.get("request").user.is_authenticated else None,
+            owner=self.context["request"].user,
         )
         ExperimentQuestion.objects.create(
             project=project,
@@ -121,17 +146,15 @@ Rules:
 
         # Create attachment records for uploaded files
         for att in attachments_data:
-            if isinstance(att, dict) and att.get("url"):
-                ProjectAttachment.objects.create(
-                    project=project,
-                    name=att.get("name", "unnamed"),
-                    object_key=att.get("object_key", ""),
-                    url=att.get("url"),
-                    content_type=att.get("type", "application/octet-stream"),
-                    size=att.get("size", 0),
-                )
+            attachment = ProjectAttachment(
+                project=project, name=att["name"], object_key=att["object_key"],
+                content_type=att["type"], size=att["size"],
+            )
+            # Client URLs are never an authority or persisted as download targets.
+            attachment.url = self.context["request"].build_absolute_uri(private_attachment_url(attachment))
+            attachment.save()
 
         return project
 
     def to_representation(self, instance):
-        return ProjectSerializer(instance).data
+        return ProjectSerializer(instance, context=self.context).data

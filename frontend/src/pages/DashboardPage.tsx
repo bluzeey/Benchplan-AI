@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { ProjectSchema } from "@/lib/schemas"
 import { invalidatePatterns } from "@/lib/query-keys"
+import { useAiAvailability } from "@/lib/use-ai-availability"
 import { 
   fadeInUp, 
   staggerContainer, 
@@ -83,6 +84,7 @@ function AnimatedStrataMark({ className }: { className?: string }) {
 export function DashboardPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { aiAvailable, message: aiMessage } = useAiAvailability()
   const [error, setError] = useState<string | null>(null)
   const [draftHypothesis, setDraftHypothesis] = useState("")
 
@@ -109,6 +111,8 @@ export function DashboardPage() {
         }
       )
 
+      if (!aiAvailable) return { project, qc: null }
+
       const questionId = project.questions?.[0]?.id
       if (!questionId) {
         throw new Error("Project created without question")
@@ -125,9 +129,13 @@ export function DashboardPage() {
     onSuccess: (result) => {
       // Invalidate projects list so it appears in sidebar/pages
       queryClient.invalidateQueries({ queryKey: invalidatePatterns.projects.all })
-      navigate(
-        `/runs/${result.qc.agent_run_id}?qcRunId=${result.qc.qc_run_id}&projectId=${result.project.id}`
-      )
+      if (result.qc) {
+        navigate(
+          `/runs/${result.qc.agent_run_id}?qcRunId=${result.qc.qc_run_id}&projectId=${result.project.id}`
+        )
+      } else {
+        navigate(`/projects/${result.project.id}`)
+      }
     },
     onError: (err) => {
       setError(err instanceof Error ? err.message : "Failed to create project")
@@ -211,7 +219,7 @@ export function DashboardPage() {
               ease: "easeInOut",
             }}
           />
-          <span className="text-sm text-foreground font-medium">System Nominal</span>
+          <span className="text-sm text-foreground font-medium">{aiAvailable ? "AI available" : "Private workspace"}</span>
         </motion.div>
         <ThemeToggle variant="small" />
       </motion.div>
@@ -250,8 +258,9 @@ export function DashboardPage() {
             className="mt-4 text-muted-foreground max-w-lg"
             variants={staggerItem}
           >
-            Enter a scientific hypothesis and let AI generate a comprehensive
-            experiment plan with literature review, budget, timeline, and materials.
+            {aiAvailable
+              ? "Enter a scientific hypothesis and let AI generate a comprehensive experiment plan with literature review, budget, timeline, and materials."
+              : "Save a scientific hypothesis and supporting files to a private project."}
           </motion.p>
         </motion.div>
 
@@ -278,6 +287,11 @@ export function DashboardPage() {
               isSubmitting={createProject.isPending}
             />
           </motion.div>
+          {aiMessage && (
+            <p role="status" className="mt-3 text-center text-sm text-muted-foreground">
+              {aiMessage}
+            </p>
+          )}
         </motion.div>
 
         {/* Error message */}

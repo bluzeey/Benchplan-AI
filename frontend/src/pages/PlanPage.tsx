@@ -14,7 +14,7 @@ import { ValidationPanel } from "@/components/scientist/ValidationPanel"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { apiFetch, apiFetchRaw } from "@/lib/api"
+import { API_BASE_URL, apiFetch, apiFetchRaw } from "@/lib/api"
 import { BudgetLineSchema, ExperimentPlanSchema, MaterialSchema, TimelinePhaseSchema } from "@/lib/schemas"
 import { queryKeys } from "@/lib/query-keys"
 import type { PlanSection } from "@/lib/schemas"
@@ -474,12 +474,12 @@ export function PlanPage() {
               <Link to={`/plans/${plan.id}/review`}>Open Scientist Review</Link>
             </Button>
             <Button asChild variant="outline">
-              <a href={`/api/plans/${plan.id}/export/markdown/`} target="_blank" rel="noreferrer">
+              <a href={`${API_BASE_URL}/api/plans/${plan.id}/export/markdown/`} target="_blank" rel="noreferrer">
                 Export Markdown
               </a>
             </Button>
             <Button asChild variant="outline">
-              <a href={`/api/plans/${planId}/export/materials.csv`} target="_blank" rel="noreferrer">
+              <a href={`${API_BASE_URL}/api/plans/${planId}/export/materials.csv`} target="_blank" rel="noreferrer">
                 Export Materials CSV
               </a>
             </Button>

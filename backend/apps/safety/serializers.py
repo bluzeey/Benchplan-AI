@@ -7,3 +7,4 @@ class SafetyAssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = SafetyAssessment
         fields = "__all__"
+        read_only_fields = ["question"]

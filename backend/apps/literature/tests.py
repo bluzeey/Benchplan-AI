@@ -13,17 +13,17 @@ class LiteratureServiceTests(TestCase):
         queries = build_queries("Lactobacillus rhamnosus GG C57BL/6 FITC-dextran intestinal permeability")
         self.assertGreaterEqual(len(queries), 6)
 
-    def test_novelty_similar_work(self):
-        references = [{"source": "pubmed", "title": "Example"}]
-        result = score_novelty(
-            "Supplementing C57BL/6 mice with Lactobacillus rhamnosus GG for 4 weeks will reduce intestinal permeability by at least 30% compared to controls measured by FITC-dextran.",
-            references,
-        )
-        self.assertIn(result["novelty_signal"], ["similar_work_exists", "exact_match_found"])
+    def test_novelty_is_unassessed_when_provider_is_unavailable(self):
+        references = [{"source": "pubmed", "title": "Retrieved paper", "pmid": "123456"}]
+        with patch("apps.literature.services.scoring.llm_gateway.generate_json", side_effect=RuntimeError):
+            result = score_novelty("Synthetic hypothesis with a control condition", references)
+        self.assertEqual(result["novelty_signal"], "inconclusive")
+        self.assertEqual(result["confidence"], 0)
 
-    def test_novelty_not_found(self):
+    def test_missing_references_do_not_imply_novelty(self):
         result = score_novelty("Novel catalytic polymer for asteroid regolith processing", [])
-        self.assertEqual(result["novelty_signal"], "not_found")
+        self.assertEqual(result["novelty_signal"], "inconclusive")
+        self.assertEqual(result["confidence"], 0)
 
     def test_openalex_used_when_semantic_key_missing(self):
         with patch.dict(os.environ, {"SEMANTIC_SCHOLAR_API_KEY": ""}, clear=False):
@@ -33,7 +33,7 @@ class LiteratureServiceTests(TestCase):
                 "apps.literature.services.search_semantic_scholar", return_value=[]
             ) as semantic_mock, patch(
                 "apps.literature.services.search_openalex",
-                return_value=[{"source": "openalex", "title": "OpenAlex paper"}],
+                return_value=[{"source": "openalex", "title": "OpenAlex paper", "url": "https://openalex.org/W123456"}],
             ) as openalex_mock:
                 _, refs = run_literature_search("test query")
 
@@ -50,7 +50,7 @@ class LiteratureServiceTests(TestCase):
                 "apps.literature.services.search_semantic_scholar", return_value=[]
             ) as semantic_mock, patch(
                 "apps.literature.services.search_openalex",
-                return_value=[{"source": "openalex", "title": "OpenAlex paper"}],
+                return_value=[{"source": "openalex", "title": "OpenAlex paper", "url": "https://openalex.org/W123456"}],
             ) as openalex_mock:
                 _, refs = run_literature_search("test query")
 

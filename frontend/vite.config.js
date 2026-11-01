@@ -1,3 +1,4 @@
+var _a;
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
@@ -10,5 +11,11 @@ export default defineConfig({
     },
     server: {
         port: 5173,
+        proxy: {
+            "/api": {
+                target: (_a = process.env.DEV_API_PROXY_TARGET) !== null && _a !== void 0 ? _a : "http://localhost:8000",
+                changeOrigin: false,
+            },
+        },
     },
 });

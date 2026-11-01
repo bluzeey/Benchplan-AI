@@ -53,7 +53,7 @@ export const ReferenceSchema = z.object({
 export const LiteratureQcRunSchema = z.object({
   id: IdSchema,
   status: z.string(),
-  novelty_signal: LiteratureSignalSchema.nullable(),
+  novelty_signal: z.preprocess((value) => value === "" ? null : value, LiteratureSignalSchema.nullable()),
   confidence: z.union([z.number(), z.string()]).nullable(),
   summary: z.string().nullable(),
   query_plan: z.record(z.string(), z.any()).optional(),

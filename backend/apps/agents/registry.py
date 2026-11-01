@@ -239,7 +239,7 @@ def parse_hypothesis(raw_text: str) -> dict:
 
     except Exception as e:
         # Fallback: return basic structure if LLM fails
-        print(f"LLM parsing failed, using fallback: {e}")
+        print(f"LLM parsing unavailable: {type(e).__name__}")
         return {
             "domain": "other",
             "hypothesis": raw_text,
@@ -451,7 +451,7 @@ def _build_materials_v2(
         return materials
 
     except Exception as e:
-        print(f"AI materials generation failed: {e}")
+        print(f"AI materials generation unavailable: {type(e).__name__}")
         return _build_materials()  # Fallback to legacy
 
 
@@ -496,7 +496,7 @@ def _run_critic(
         )
         return result.model_dump()
     except Exception as e:
-        print(f"Critic review failed: {e}")
+        print(f"Critic review unavailable: {type(e).__name__}")
         return {
             "issues": [],
             "overall_quality_score": 0.6,
@@ -551,7 +551,7 @@ def generate_plan_from_qc(qc_run_id: str, agent_run_id: str, plan_id: str) -> Ex
 
     # Get safety and feedback context
     safety_triage = triage_hypothesis(question.raw_text)
-    feedback_examples = retrieve_similar_feedback(parsed.get("domain", "other"), limit=3)
+    feedback_examples = retrieve_similar_feedback(parsed.get("domain", "other"), limit=3, owner_id=project.owner_id)
     feedback_lessons = [example.lesson for example in feedback_examples]
 
     if PLANNING_V2_ENABLED:

@@ -1,6 +1,9 @@
 import { z } from "zod"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
+// Production uses Vercel's /api rewrite so session cookies stay on the app's origin.
+const API_BASE_URL = import.meta.env.PROD
+  ? ""
+  : (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/+$/, "")
 
 // Store CSRF token in memory
 let csrfToken: string | null = null
@@ -129,7 +132,7 @@ function isCsrfError(error: Record<string, unknown>): boolean {
   return detail.includes("csrf") || detail.includes("forbidden")
 }
 
-export async function apiFetch<T>(path: string, schema: z.ZodSchema<T>, options: RequestInit = {}, retryCount = 0): Promise<T> {
+export async function apiFetch<T>(path: string, schema: z.ZodType<T, z.ZodTypeDef, unknown>, options: RequestInit = {}, retryCount = 0): Promise<T> {
   const method = options.method || "GET"
   const includeCsrf = needsCsrf(method)
 
@@ -189,7 +192,7 @@ export async function apiFetchRaw(path: string, options: RequestInit = {}, retry
     throw new Error(extractErrorMessage(error, res.status))
   }
 
-  return res.json()
+  return res.status === 204 ? undefined : res.json()
 }
 
 // Reset CSRF token (call on logout)

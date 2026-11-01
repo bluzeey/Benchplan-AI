@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,6 +21,10 @@ def env_list(name: str, default: str = "") -> list[str]:
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
 DEBUG = env_bool("DJANGO_DEBUG", True)
+if not DEBUG and (
+    len(SECRET_KEY) < 50 or len(set(SECRET_KEY)) < 5 or SECRET_KEY.startswith("django-insecure-")
+):
+    raise ImproperlyConfigured("Configure a strong private DJANGO_SECRET_KEY before running in production.")
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "*")
 if "*" not in ALLOWED_HOSTS:
     for railway_host in (
@@ -52,6 +57,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.common.middleware.PrivateApiResponsesMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -117,7 +123,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",
     ],
 }
 
@@ -125,6 +131,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "BenchPlan AI API",
     "DESCRIPTION": "Experiment planning and literature QC API",
     "VERSION": "0.1.0",
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
 }
 
 # CORS Configuration
@@ -151,10 +158,19 @@ CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", True)
 
 DEFAULT_CURRENCY = os.getenv("DEFAULT_CURRENCY", "USD")
 
+# AI provider selection (no automatic fallback between providers)
+AI_ENABLED = env_bool("AI_ENABLED", True)
+AI_PROVIDER = os.getenv("AI_PROVIDER", "fireworks").strip().lower()
+
 # Fireworks AI (Kimi K2.5 Turbo) Configuration
 FIREWORKS_API_KEY = os.getenv("FIREWORKS_API_KEY", "")
 FIREWORKS_BASE_URL = os.getenv("FIREWORKS_BASE_URL", "https://api.fireworks.ai/inference/v1")
 FIREWORKS_MODEL = os.getenv("FIREWORKS_MODEL", "accounts/fireworks/routers/kimi-k2p5-turbo")
+
+# OpenRouter Configuration
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "moonshotai/kimi-k2.5")
 
 # Web Search API (Serper for real-time research data)
 SERPER_API_KEY = os.getenv("SERPER_API_KEY", "")
@@ -164,6 +180,8 @@ PLANNING_V2_ENABLED = os.getenv("PLANNING_V2_ENABLED", "true").lower() in ("true
 
 # Security settings for production
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
+# Enable only behind the controlled ingress, which replaces this header.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if env_bool("TRUST_PROXY_HEADERS", False) else None
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"

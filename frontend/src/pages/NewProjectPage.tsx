@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { AlertCircle } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { apiFetchRaw } from "@/lib/api"
 import { invalidatePatterns } from "@/lib/query-keys"
+import { getHypothesisDraft } from "@/lib/auth-destination"
 
 type NewProjectForm = {
   title?: string
@@ -24,10 +25,12 @@ type NewProjectForm = {
 
 export function NewProjectPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const form = useForm<NewProjectForm>({
     defaultValues: {
       title: "New STRATA Project",
+      hypothesis: getHypothesisDraft(location.state)?.hypothesis ?? "",
       domain: "other",
       lab_type: "academic",
       currency: "USD",
@@ -39,11 +42,13 @@ export function NewProjectPage() {
       const project = await apiFetchRaw("/api/projects/", {
         method: "POST",
         body: JSON.stringify({
-          title: payload.title || "STRATA Project",
+          title: payload.title?.trim() || "STRATA Project",
           hypothesis: payload.hypothesis,
           domain: payload.domain,
           currency: payload.currency,
-          target_duration_weeks: payload.target_duration_weeks,
+          target_duration_weeks: Number.isFinite(payload.target_duration_weeks)
+            ? payload.target_duration_weeks
+            : undefined,
           lab_type: payload.lab_type,
         }),
       })
@@ -67,7 +72,10 @@ export function NewProjectPage() {
       <Card className="rounded-2xl border-border/70">
         <CardHeader>
           <CardTitle>New project wizard</CardTitle>
-          <p className="text-sm text-muted-foreground">Define a hypothesis and constraints. STRATA handles literature retrieval and plan synthesis.</p>
+          <p className="text-sm text-muted-foreground">
+            Review your hypothesis and constraints, then create your private project.
+            You can start literature checks and plan generation separately after creating it.
+          </p>
         </CardHeader>
       </Card>
 
@@ -80,7 +88,13 @@ export function NewProjectPage() {
             </label>
             <label className="space-y-1.5 text-xs text-muted-foreground">
               Hypothesis
-              <Textarea rows={8} {...form.register("hypothesis", { required: true, minLength: 40 })} />
+              <Textarea rows={8} {...form.register("hypothesis", {
+                required: "Enter a hypothesis.",
+                minLength: { value: 40, message: "Use at least 40 characters to describe your hypothesis." },
+              })} />
+              {form.formState.errors.hypothesis && (
+                <span role="alert" className="block text-destructive">{form.formState.errors.hypothesis.message}</span>
+              )}
             </label>
             <label className="space-y-1.5 text-xs text-muted-foreground">
               Domain
@@ -111,7 +125,7 @@ export function NewProjectPage() {
               </label>
               <label className="space-y-1.5 text-xs text-muted-foreground">
                 Target duration (weeks)
-                <Input type="number" {...form.register("target_duration_weeks", { valueAsNumber: true })} />
+                <Input type="number" min={1} step={1} {...form.register("target_duration_weeks", { valueAsNumber: true })} />
               </label>
             </div>
             {warnings.length ? (

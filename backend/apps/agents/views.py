@@ -1,17 +1,20 @@
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 
-from .models import AgentEvent, AgentRun
 from .serializers import AgentEventSerializer, AgentRunSerializer
+from .access import owned_agent_run
 
 
 class AgentRunDetailView(RetrieveAPIView):
-    queryset = AgentRun.objects.all()
     serializer_class = AgentRunSerializer
     lookup_url_kwarg = "run_id"
+
+    def get_object(self):
+        return owned_agent_run(self.request.user, self.kwargs["run_id"])
 
 
 class AgentRunEventsView(ListAPIView):
     serializer_class = AgentEventSerializer
 
     def get_queryset(self):
-        return AgentEvent.objects.filter(run_id=self.kwargs["run_id"]).order_by("created_at")
+        run = owned_agent_run(self.request.user, self.kwargs["run_id"])
+        return run.events.order_by("created_at")

@@ -25,6 +25,9 @@ type Props = {
   isSubmitting?: boolean
   className?: string
   placeholder?: string
+  allowAttachments?: boolean
+  maxLength?: number
+  submitLabel?: string
 }
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25MB
@@ -60,6 +63,9 @@ export function HypothesisInput({
   onChange,
   onSubmit,
   isSubmitting = false,
+  allowAttachments = true,
+  maxLength,
+  submitLabel = "Submit hypothesis",
   className,
   placeholder = "e.g. Supplementing C57BL/6 mice with Lactobacillus rhamnosus GG for 4 weeks will...",
 }: Props) {
@@ -83,10 +89,11 @@ export function HypothesisInput({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (text.trim().length < 10) return
-    await onSubmit(text, attachments.filter((a) => a.uploadStatus === "completed"))
+    await onSubmit(text, allowAttachments ? attachments.filter((a) => a.uploadStatus === "completed") : [])
   }
 
   function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    if (!allowAttachments) return
     const files = event.target.files
     if (!files || files.length === 0) return
 
@@ -132,6 +139,7 @@ export function HypothesisInput({
   }
 
   async function uploadFiles(filesToUpload: Attachment[]) {
+    if (!allowAttachments) return
     setIsUploading(true)
 
     for (const attachment of filesToUpload) {
@@ -201,7 +209,7 @@ export function HypothesisInput({
     setAttachments((prev) => prev.filter((a) => a.id !== id))
   }
 
-  const hasAttachments = attachments.length > 0
+  const hasAttachments = allowAttachments && attachments.length > 0
   const allUploadsComplete = attachments.every(
     (a) => a.uploadStatus === "completed" || a.uploadStatus === "error"
   )
@@ -221,7 +229,8 @@ export function HypothesisInput({
                 {isImageType(attachment.type) && attachment.url ? (
                   <div className="relative h-10 w-10 overflow-hidden rounded-md">
                     <img
-                      src={attachment.url}
+                      src={attachment.url.startsWith("/api/") ? `${API_BASE_URL}${attachment.url}` : attachment.url}
+                      referrerPolicy="no-referrer"
                       alt={attachment.name}
                       className="h-full w-full object-cover"
                     />
@@ -274,46 +283,53 @@ export function HypothesisInput({
           className="min-h-[140px] w-full resize-none border-0 bg-transparent text-base leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-0"
           placeholder={placeholder}
           value={text}
+          maxLength={maxLength}
           onChange={(event) => handleTextChange(event.target.value)}
         />
 
         <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {/* Paperclip / file attachment button */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,.pdf,.doc,.docx,.txt,.md,.xls,.xlsx"
-              className="hidden"
-              onChange={handleFileSelect}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading || isSubmitting}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
-              title="Attach files (images, PDFs, docs - max 25MB)"
-            >
-              {isUploading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Paperclip className="h-5 w-5" />
-              )}
-            </button>
+            {allowAttachments && (
+              <>
+                {/* Paperclip / file attachment button */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx,.txt,.md,.xls,.xlsx"
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || isSubmitting}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
+                  title="Attach files (images, PDFs, docs - max 25MB)"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Paperclip className="h-5 w-5" />
+                  )}
+                </button>
 
-            {/* Attachment count indicator */}
-            {attachments.length > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {attachments.filter((a) => a.uploadStatus === "completed").length}/{attachments.length} uploaded
-              </span>
+                {/* Attachment count indicator */}
+                {attachments.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    {attachments.filter((a) => a.uploadStatus === "completed").length}/{attachments.length} uploaded
+                  </span>
+                )}
+              </>
             )}
           </div>
 
           {/* Send button */}
           <button
             type="submit"
-            disabled={isSubmitting || trimmedLength < 10 || (isUploading && !allUploadsComplete)}
+            aria-label={submitLabel}
+            title={submitLabel}
+            disabled={isSubmitting || trimmedLength < 10 || (allowAttachments && isUploading && !allUploadsComplete)}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (

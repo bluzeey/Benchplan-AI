@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     ProjectAttachmentDeleteView,
+    ProjectAttachmentDownloadView,
     ProjectAttachmentListView,
     ProjectQuestionCreateView,
     ProjectViewSet,
@@ -17,5 +18,6 @@ urlpatterns = [
     path("projects/<uuid:project_id>/questions/", ProjectQuestionCreateView.as_view(), name="project-question-create"),
     path("projects/<uuid:project_id>/attachments/", ProjectAttachmentListView.as_view(), name="project-attachment-list"),
     path("attachments/<uuid:attachment_id>/", ProjectAttachmentDeleteView.as_view(), name="project-attachment-delete"),
+    path("attachments/<uuid:attachment_id>/download/", ProjectAttachmentDownloadView.as_view(), name="project-attachment-download"),
     path("questions/<uuid:question_id>/", QuestionDetailView.as_view(), name="question-detail"),
 ]
