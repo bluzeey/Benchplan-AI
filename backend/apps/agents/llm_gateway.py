@@ -3,22 +3,41 @@ from __future__ import annotations
 import json
 from typing import Any, TypeVar
 
-from django.conf import settings
 from openai import OpenAI
 from pydantic import BaseModel
+
+from .availability import AiProviderConfig, get_ai_config, require_ai_available
 
 T = TypeVar("T", bound=BaseModel)
 
 
 class LlmGateway:
-    """Gateway for Fireworks AI LLM calls using OpenAI-compatible API."""
+    """Gateway for the selected provider's OpenAI-compatible API."""
 
     def __init__(self):
-        self.client = OpenAI(
-            base_url=settings.FIREWORKS_BASE_URL,
-            api_key=settings.FIREWORKS_API_KEY,
-        )
-        self.model = settings.FIREWORKS_MODEL
+        # Keep a public, assignable client for existing test overrides.
+        self.client = None
+        self._managed_client = None
+        self._client_config = None
+
+    @property
+    def model(self):
+        config = get_ai_config()
+        return config.model if config else ""
+
+    def _get_client(self, config: AiProviderConfig):
+        if self.client is None or (
+            self.client is self._managed_client and self._client_config != config
+        ):
+            self.client = OpenAI(
+                base_url=config.base_url,
+                api_key=config.api_key,
+                timeout=45.0,
+                max_retries=1,
+            )
+            self._managed_client = self.client
+            self._client_config = config
+        return self.client
 
     def generate_json(
         self,
@@ -40,12 +59,13 @@ class LlmGateway:
         Returns:
             Parsed JSON response as a dictionary
         """
+        config = require_ai_available()
         # Build the full prompt with payload context
         full_prompt = self._build_prompt(prompt, payload)
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
+            response = self._get_client(config).chat.completions.create(
+                model=config.model,
                 messages=[
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": full_prompt},
@@ -61,8 +81,8 @@ class LlmGateway:
             return json.loads(content)
 
         except Exception as e:
-            # Log the error and return a fallback response
-            print(f"LLM Error: {e}")
+            # Log only the exception type; provider errors can contain private data.
+            print(f"LLM request failed: {type(e).__name__}")
             raise
 
     def generate_text(
@@ -85,11 +105,12 @@ class LlmGateway:
         Returns:
             Text response from the model
         """
+        config = require_ai_available()
         full_prompt = self._build_prompt(prompt, payload or {})
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
+            response = self._get_client(config).chat.completions.create(
+                model=config.model,
                 messages=[
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": full_prompt},
@@ -104,7 +125,7 @@ class LlmGateway:
             return content
 
         except Exception as e:
-            print(f"LLM Error: {e}")
+            print(f"LLM request failed: {type(e).__name__}")
             raise
 
     def generate_with_schema(
@@ -129,14 +150,15 @@ class LlmGateway:
         Returns:
             Validated Pydantic model instance
         """
+        config = require_ai_available()
         # Include schema info in the prompt for better results
         schema_description = f"\n\nRespond with valid JSON matching this structure: {schema.model_json_schema()}"
 
         full_prompt = self._build_prompt(prompt + schema_description, payload)
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
+            response = self._get_client(config).chat.completions.create(
+                model=config.model,
                 messages=[
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": full_prompt},
@@ -153,7 +175,7 @@ class LlmGateway:
             return schema(**data)
 
         except Exception as e:
-            print(f"LLM Schema Error: {e}")
+            print(f"LLM schema request failed: {type(e).__name__}")
             raise
 
     def _build_prompt(self, prompt: str, payload: dict[str, Any]) -> str:

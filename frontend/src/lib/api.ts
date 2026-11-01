@@ -132,7 +132,7 @@ function isCsrfError(error: Record<string, unknown>): boolean {
   return detail.includes("csrf") || detail.includes("forbidden")
 }
 
-export async function apiFetch<T>(path: string, schema: z.ZodSchema<T>, options: RequestInit = {}, retryCount = 0): Promise<T> {
+export async function apiFetch<T>(path: string, schema: z.ZodType<T, z.ZodTypeDef, unknown>, options: RequestInit = {}, retryCount = 0): Promise<T> {
   const method = options.method || "GET"
   const includeCsrf = needsCsrf(method)
 
@@ -192,7 +192,7 @@ export async function apiFetchRaw(path: string, options: RequestInit = {}, retry
     throw new Error(extractErrorMessage(error, res.status))
   }
 
-  return res.json()
+  return res.status === 204 ? undefined : res.json()
 }
 
 // Reset CSRF token (call on logout)

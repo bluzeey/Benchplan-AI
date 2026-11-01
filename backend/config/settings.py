@@ -158,10 +158,19 @@ CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", True)
 
 DEFAULT_CURRENCY = os.getenv("DEFAULT_CURRENCY", "USD")
 
+# AI provider selection (no automatic fallback between providers)
+AI_ENABLED = env_bool("AI_ENABLED", True)
+AI_PROVIDER = os.getenv("AI_PROVIDER", "fireworks").strip().lower()
+
 # Fireworks AI (Kimi K2.5 Turbo) Configuration
 FIREWORKS_API_KEY = os.getenv("FIREWORKS_API_KEY", "")
 FIREWORKS_BASE_URL = os.getenv("FIREWORKS_BASE_URL", "https://api.fireworks.ai/inference/v1")
 FIREWORKS_MODEL = os.getenv("FIREWORKS_MODEL", "accounts/fireworks/routers/kimi-k2p5-turbo")
+
+# OpenRouter Configuration
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "moonshotai/kimi-k2.5")
 
 # Web Search API (Serper for real-time research data)
 SERPER_API_KEY = os.getenv("SERPER_API_KEY", "")

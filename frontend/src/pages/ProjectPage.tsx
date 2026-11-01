@@ -11,6 +11,7 @@ import { apiFetch, apiFetchRaw, API_BASE_URL } from "@/lib/api"
 import { ExperimentPlanSchema, ProjectSchema, PlansListSchema } from "@/lib/schemas"
 import { queryKeys, invalidatePatterns } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
+import { useAiAvailability } from "@/lib/use-ai-availability"
 
 const StartQcSchema = z.object({ qc_run_id: z.string(), agent_run_id: z.string() })
 
@@ -52,6 +53,7 @@ export function ProjectPage() {
   const navigate = useNavigate()
 
   const queryClient = useQueryClient()
+  const { aiAvailable, message: aiMessage } = useAiAvailability()
 
   const projectQuery = useQuery({
     queryKey: queryKeys.projects.detail(projectId || ""),
@@ -76,6 +78,7 @@ export function ProjectPage() {
 
   const startQc = useMutation({
     mutationFn: async () => {
+      if (!aiAvailable) throw new Error(aiMessage || "AI is currently unavailable.")
       const questionId = projectQuery.data?.questions?.[0]?.id
       if (!questionId) throw new Error("No question found for project")
       const payload = await apiFetchRaw(`/api/questions/${questionId}/literature-qc/`, { method: "POST" })
@@ -130,8 +133,12 @@ export function ProjectPage() {
       </Card>
 
       {/* Action Buttons */}
-      <div className="flex gap-3">
-        <Button onClick={() => startQc.mutate()} disabled={startQc.isPending}>
+      <div className="space-y-2">
+        <Button
+          onClick={() => startQc.mutate()}
+          disabled={startQc.isPending || !aiAvailable}
+          aria-describedby={aiMessage ? "project-ai-status" : undefined}
+        >
           {startQc.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -141,6 +148,11 @@ export function ProjectPage() {
             "Run Literature QC"
           )}
         </Button>
+        {aiMessage && (
+          <p id="project-ai-status" role="status" className="text-sm text-muted-foreground">
+            {aiMessage}
+          </p>
+        )}
       </div>
 
       {/* Attachments Section */}
@@ -219,7 +231,9 @@ export function ProjectPage() {
               </div>
               <p className="text-sm text-muted-foreground">No plans yet.</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Run Literature QC to generate your first plan.
+                {aiAvailable
+                  ? "Run Literature QC to generate your first plan."
+                  : "You can generate plans when AI is available."}
               </p>
             </CardContent>
           </Card>

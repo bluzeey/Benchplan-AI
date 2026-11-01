@@ -70,3 +70,18 @@ owner-checked, short-lived download links. Provider credentials remain server-si
 Backend offline checks use `backend/config/test_settings.py` and
 `backend/requirements-test.txt`; see `backend/tests/README.md`. The backend is
 pinned to the [Django 5.2.18 security release](https://www.djangoproject.com/weblog/2026/oct/06/security-releases/).
+
+AI providers are selected explicitly with `AI_PROVIDER=fireworks` or
+`AI_PROVIDER=openrouter`; requests never fall back to another provider. OpenRouter
+uses a private runtime `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` (default:
+`moonshotai/kimi-k2.5`). Keep `AI_ENABLED=false` while the key and end-to-end
+generation checks are pending. The authenticated `/api/capabilities/` endpoint
+reports configuration readiness without contacting a provider or exposing keys.
+Unavailable AI jobs return 503 before records or tasks are created; ordinary
+private projects and files remain available. Adding a key still requires a
+runtime update and provider validation before enabling AI.
+
+PubMed and Europe PMC retrieve actual citations with bounded requests; the
+unsupported protocols.io integration returns no results. Empty retrieval or an
+unavailable novelty assessor produces an inconclusive, zero-confidence result,
+never sample citations or a claim that a hypothesis is novel.

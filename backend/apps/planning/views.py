@@ -4,6 +4,7 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView, UpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.agents.availability import require_ai_available
 from apps.agents.models import AgentEvent, AgentRun
 from apps.common.access import owned_plans, owned_qc_runs
 
@@ -30,6 +31,7 @@ class GeneratePlanView(APIView):
         qc_run = get_object_or_404(
             owned_qc_runs(request.user).select_related("question", "question__project"), pk=qc_run_id
         )
+        require_ai_available()
         question = qc_run.question
         project = question.project
 

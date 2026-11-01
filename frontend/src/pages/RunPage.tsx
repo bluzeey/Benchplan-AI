@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { apiFetch, apiFetchRaw } from "@/lib/api"
 import { AgentRunSchema, ExperimentPlanSchema, LiteratureQcRunSchema } from "@/lib/schemas"
 import { queryKeys, invalidatePatterns } from "@/lib/query-keys"
+import { useAiAvailability } from "@/lib/use-ai-availability"
 
 const GeneratePlanResponseSchema = z.object({ agent_run_id: z.string(), plan_id: z.string() })
 
@@ -20,6 +21,7 @@ export function RunPage() {
   const qcRunId = searchParams.get("qcRunId")
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { aiAvailable, message: aiMessage } = useAiAvailability()
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null)
 
   const runQuery = useQuery({
@@ -52,6 +54,7 @@ export function RunPage() {
 
   const generatePlan = useMutation({
     mutationFn: async () => {
+      if (!aiAvailable) throw new Error(aiMessage || "AI is currently unavailable.")
       const payload = await apiFetchRaw(`/api/literature-qc/${qcRunId}/generate-plan/`, { method: "POST" })
       return GeneratePlanResponseSchema.parse(payload)
     },
@@ -87,6 +90,11 @@ export function RunPage() {
   return (
     <div className="space-y-4">
       <h2 className="text-3xl font-semibold tracking-tight">Live run</h2>
+      {aiMessage && (
+        <p id="run-ai-status" role="status" className="text-sm text-muted-foreground">
+          {aiMessage}
+        </p>
+      )}
 
       {/* Grid layout: Left column (Status + Plan), Right column (Literature QC) */}
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
@@ -121,7 +129,12 @@ export function RunPage() {
                 <CardTitle>Experiment Plan</CardTitle>
               </CardHeader>
               <CardContent>
-                <Button onClick={() => generatePlan.mutate()} disabled={generatePlan.isPending} className="w-full">
+                <Button
+                  onClick={() => generatePlan.mutate()}
+                  disabled={generatePlan.isPending || !aiAvailable}
+                  aria-describedby={aiMessage ? "run-ai-status" : undefined}
+                  className="w-full"
+                >
                   {generatePlan.isPending ? "Generating..." : "Generate Experiment Plan"}
                 </Button>
               </CardContent>
