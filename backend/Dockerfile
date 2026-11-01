@@ -5,6 +5,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+# Provide the HTTP probe used by the deployment platform.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install Python dependencies
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
