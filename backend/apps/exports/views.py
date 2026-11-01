@@ -2,16 +2,17 @@ import csv
 from io import StringIO
 
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 
-from apps.planning.models import ExperimentPlan
+from apps.common.access import owned_plans
 
 from .renderers import render_plan_markdown
 
 
 class PlanMarkdownExportView(APIView):
     def get(self, request, plan_id):
-        plan = ExperimentPlan.objects.get(id=plan_id)
+        plan = get_object_or_404(owned_plans(request.user), pk=plan_id)
         body = render_plan_markdown(plan)
         response = HttpResponse(body, content_type="text/markdown")
         response["Content-Disposition"] = f'attachment; filename="plan-{plan_id}.md"'
@@ -20,7 +21,7 @@ class PlanMarkdownExportView(APIView):
 
 class PlanMaterialsCsvExportView(APIView):
     def get(self, request, plan_id):
-        plan = ExperimentPlan.objects.get(id=plan_id)
+        plan = get_object_or_404(owned_plans(request.user), pk=plan_id)
         buffer = StringIO()
         writer = csv.writer(buffer)
         writer.writerow(["Item", "Category", "Supplier", "Catalog Number", "Quantity", "Estimated Unit Cost", "Estimated Total", "Needs Verification"])
@@ -44,7 +45,7 @@ class PlanMaterialsCsvExportView(APIView):
 
 class PlanBudgetCsvExportView(APIView):
     def get(self, request, plan_id):
-        plan = ExperimentPlan.objects.get(id=plan_id)
+        plan = get_object_or_404(owned_plans(request.user), pk=plan_id)
         buffer = StringIO()
         writer = csv.writer(buffer)
         writer.writerow(["Category", "Label", "Quantity", "Unit Cost", "Total Cost", "Assumptions"])

@@ -551,7 +551,7 @@ def generate_plan_from_qc(qc_run_id: str, agent_run_id: str, plan_id: str) -> Ex
 
     # Get safety and feedback context
     safety_triage = triage_hypothesis(question.raw_text)
-    feedback_examples = retrieve_similar_feedback(parsed.get("domain", "other"), limit=3)
+    feedback_examples = retrieve_similar_feedback(parsed.get("domain", "other"), limit=3, owner_id=project.owner_id)
     feedback_lessons = [example.lesson for example in feedback_examples]
 
     if PLANNING_V2_ENABLED:

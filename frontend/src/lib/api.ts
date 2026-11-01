@@ -1,6 +1,9 @@
 import { z } from "zod"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
+// Production uses Vercel's /api rewrite so session cookies stay on the app's origin.
+const API_BASE_URL = import.meta.env.PROD
+  ? ""
+  : (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/+$/, "")
 
 // Store CSRF token in memory
 let csrfToken: string | null = null

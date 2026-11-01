@@ -7,7 +7,7 @@ class ReviewAnnotationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewAnnotation
         fields = "__all__"
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "review_session", "created_at", "updated_at"]
 
 
 class ReviewSessionListSerializer(serializers.ModelSerializer):
@@ -28,7 +28,7 @@ class ReviewSessionListSerializer(serializers.ModelSerializer):
             "created_at",
             "completed_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "plan", "created_at"]
 
 
 class ReviewSessionSerializer(serializers.ModelSerializer):
@@ -37,10 +37,11 @@ class ReviewSessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewSession
         fields = ["id", "plan", "reviewer", "status", "overall_rating", "annotations", "created_at", "completed_at"]
-        read_only_fields = ["id", "reviewer", "created_at"]
+        read_only_fields = ["id", "plan", "reviewer", "created_at"]
 
 
 class FeedbackExampleSerializer(serializers.ModelSerializer):
     class Meta:
         model = FeedbackExample
         fields = "__all__"
+        read_only_fields = ["source_annotation"]

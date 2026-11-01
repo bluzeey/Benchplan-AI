@@ -1,12 +1,13 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.generics import ListAPIView, RetrieveAPIView, UpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.agents.models import AgentEvent, AgentRun
-from apps.literature.models import LiteratureQcRun
+from apps.common.access import owned_plans, owned_qc_runs
 
-from .models import BudgetLine, ExperimentPlan, Material, PlanSection, TimelinePhase
+from .models import ExperimentPlan
 from .serializers import (
     BudgetLineSerializer,
     ExperimentPlanSerializer,
@@ -21,16 +22,14 @@ class PlanListView(ListAPIView):
     serializer_class = ExperimentPlanListSerializer
 
     def get_queryset(self):
-        if self.request.user.is_authenticated:
-            return ExperimentPlan.objects.filter(
-                project__owner=self.request.user
-            ).select_related("project", "question").order_by("-created_at")
-        return ExperimentPlan.objects.none()
+        return owned_plans(self.request.user).select_related("project", "question").order_by("-created_at")
 
 
 class GeneratePlanView(APIView):
     def post(self, request, qc_run_id):
-        qc_run = LiteratureQcRun.objects.select_related("question", "question__project").get(id=qc_run_id)
+        qc_run = get_object_or_404(
+            owned_qc_runs(request.user).select_related("question", "question__project"), pk=qc_run_id
+        )
         question = qc_run.question
         project = question.project
 
@@ -66,40 +65,49 @@ class GeneratePlanView(APIView):
 
 
 class PlanDetailView(RetrieveAPIView):
-    queryset = ExperimentPlan.objects.all()
     serializer_class = ExperimentPlanSerializer
     lookup_url_kwarg = "plan_id"
 
+    def get_queryset(self):
+        return owned_plans(self.request.user)
 
-class PlanSectionsView(ListAPIView):
+
+class OwnedPlanChildrenMixin:
+    def get_plan(self):
+        return get_object_or_404(owned_plans(self.request.user), pk=self.kwargs["plan_id"])
+
+
+class PlanSectionsView(OwnedPlanChildrenMixin, ListAPIView):
     serializer_class = PlanSectionSerializer
 
     def get_queryset(self):
-        return PlanSection.objects.filter(plan_id=self.kwargs["plan_id"]).order_by("order")
+        return self.get_plan().sections.order_by("order")
 
 
-class PlanSectionPatchView(UpdateAPIView):
+class PlanSectionPatchView(OwnedPlanChildrenMixin, UpdateAPIView):
     serializer_class = PlanSectionSerializer
-    queryset = PlanSection.objects.all()
     lookup_url_kwarg = "section_id"
 
+    def get_queryset(self):
+        return self.get_plan().sections.all()
 
-class PlanMaterialsView(ListAPIView):
+
+class PlanMaterialsView(OwnedPlanChildrenMixin, ListAPIView):
     serializer_class = MaterialSerializer
 
     def get_queryset(self):
-        return Material.objects.filter(plan_id=self.kwargs["plan_id"]).order_by("name")
+        return self.get_plan().materials.order_by("name")
 
 
-class PlanBudgetView(ListAPIView):
+class PlanBudgetView(OwnedPlanChildrenMixin, ListAPIView):
     serializer_class = BudgetLineSerializer
 
     def get_queryset(self):
-        return BudgetLine.objects.filter(plan_id=self.kwargs["plan_id"]).order_by("category")
+        return self.get_plan().budget_lines.order_by("category")
 
 
-class PlanTimelineView(ListAPIView):
+class PlanTimelineView(OwnedPlanChildrenMixin, ListAPIView):
     serializer_class = TimelinePhaseSerializer
 
     def get_queryset(self):
-        return TimelinePhase.objects.filter(plan_id=self.kwargs["plan_id"]).order_by("phase_number")
+        return self.get_plan().timeline_phases.order_by("phase_number")

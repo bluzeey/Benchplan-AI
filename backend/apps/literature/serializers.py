@@ -26,6 +26,7 @@ class LiteratureQcRunSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LiteratureQcRun
+        read_only_fields = ["question"]
         fields = [
             "id",
             "question",

@@ -31,18 +31,21 @@ class MaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Material
         fields = "__all__"
+        read_only_fields = ["plan"]
 
 
 class BudgetLineSerializer(serializers.ModelSerializer):
     class Meta:
         model = BudgetLine
         fields = "__all__"
+        read_only_fields = ["plan"]
 
 
 class TimelinePhaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = TimelinePhase
         fields = "__all__"
+        read_only_fields = ["plan"]
 
 
 class ExperimentPlanListSerializer(serializers.ModelSerializer):
@@ -51,6 +54,7 @@ class ExperimentPlanListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExperimentPlan
+        read_only_fields = ["project", "question"]
         fields = [
             "id",
             "project",
@@ -76,6 +80,7 @@ class ExperimentPlanSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ExperimentPlan
+        read_only_fields = ["project", "question", "qc_run"]
         fields = [
             "id",
             "project",

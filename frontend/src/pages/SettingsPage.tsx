@@ -11,6 +11,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { API_BASE_URL } from "@/lib/api"
 
 interface SettingsItemProps {
   icon: React.ReactNode
@@ -125,7 +126,7 @@ export function SettingsPage() {
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" asChild>
                   <a
-                    href="http://localhost:8000/api/docs/"
+                    href={`${API_BASE_URL}/api/docs/`}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -134,7 +135,7 @@ export function SettingsPage() {
                 </Button>
                 <Button variant="outline" size="sm" asChild>
                   <a
-                    href="http://localhost:8000/api/schema/"
+                    href={`${API_BASE_URL}/api/schema/`}
                     target="_blank"
                     rel="noreferrer"
                   >

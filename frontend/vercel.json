@@ -1,8 +1,21 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://benchplan-api.granveo.com/api/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        { "key": "Cache-Control", "value": "private, no-store" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "no-store" }
+      ]
     }
   ]
 }

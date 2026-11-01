@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -8,10 +8,13 @@ import { StrataLogo } from "@/components/ui/strata-logo"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { useAuth } from "@/app/auth-provider"
 import { ensureCsrfToken } from "@/lib/api"
+import { getAuthDestination, getAuthNavigationState } from "@/lib/auth-destination"
 
 export function SignupPage() {
   const { signup, error } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const authState = getAuthNavigationState(location.state)
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -46,7 +49,8 @@ export function SignupPage() {
     setIsLoading(true)
     try {
       await signup(formData)
-      navigate("/dashboard")
+      const destination = getAuthDestination(authState)
+      navigate(destination.to, { replace: true, state: destination.state })
     } catch {
       // Error is handled by auth provider
     } finally {
@@ -69,7 +73,7 @@ export function SignupPage() {
             Create your account
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Start planning your experiments with AI
+            {authState.draft ? "Create an account to review your draft and start a private project" : "Start planning your experiments with AI"}
           </p>
         </div>
 
@@ -82,6 +86,7 @@ export function SignupPage() {
                   <span>{displayError}</span>
                   <Link
                     to="/login"
+                    state={authState}
                     className="font-medium text-red-400 underline underline-offset-2 hover:text-red-300"
                   >
                     Go to login
@@ -188,7 +193,7 @@ export function SignupPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link to="/login" className="font-medium text-primary hover:opacity-80">
+            <Link to="/login" state={authState} className="font-medium text-primary hover:opacity-80">
               Sign in
             </Link>
           </p>

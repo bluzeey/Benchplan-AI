@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react"
 import { createBrowserRouter, Navigate, Outlet, useLocation } from "react-router-dom"
 import { useAuth } from "@/app/auth-provider"
+import { getAuthDestination, getAuthNavigationState, getHypothesisDraft } from "@/lib/auth-destination"
 
 import { AppShell } from "@/components/layout/AppShell"
 import { LandingPage } from "@/pages/LandingPage"
@@ -41,7 +42,10 @@ function ProtectedLayout() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />
+    return <Navigate to="/login" replace state={getAuthNavigationState({
+      from: location,
+      draft: getHypothesisDraft(location.state),
+    })} />
   }
 
   return (
@@ -56,11 +60,13 @@ function ProtectedLayout() {
 // Public only layout - renders immediately, redirects if already logged in
 function PublicOnlyLayout() {
   const { isAuthenticated, isLoading } = useAuth()
+  const location = useLocation()
 
   // Only redirect if we're sure the user is authenticated (not during initial loading)
   // This lets public pages render immediately without waiting for auth check
   if (!isLoading && isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
+    const destination = getAuthDestination(location.state)
+    return <Navigate to={destination.to} state={destination.state} replace />
   }
 
   return <Outlet />

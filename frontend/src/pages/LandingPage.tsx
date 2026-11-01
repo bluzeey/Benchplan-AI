@@ -1,19 +1,10 @@
 import { useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "react-router-dom"
-import { z } from "zod"
 
-import { HypothesisInput, type Attachment } from "@/components/scientist/HypothesisInput"
+import { HypothesisInput } from "@/components/scientist/HypothesisInput"
 import { SampleHypothesisCards } from "@/components/scientist/SampleHypothesisCards"
 import { StrataLogo } from "@/components/ui/strata-logo"
-import { apiFetch, apiFetchRaw } from "@/lib/api"
-import { ProjectSchema } from "@/lib/schemas"
-import { invalidatePatterns } from "@/lib/query-keys"
-
-const StartQcSchema = z.object({
-  qc_run_id: z.string(),
-  agent_run_id: z.string(),
-})
+import { getAuthNavigationState, MAX_HYPOTHESIS_DRAFT_LENGTH } from "@/lib/auth-destination"
 
 const samples = [
   {
@@ -44,53 +35,8 @@ const samples = [
 
 export function LandingPage() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const [draftHypothesis, setDraftHypothesis] = useState("")
-
-  const createProject = useMutation({
-    mutationFn: async ({ hypothesis, attachments }: { hypothesis: string; attachments: Attachment[] }) => {
-      const project = await apiFetch(
-        "/api/projects/",
-        ProjectSchema,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            hypothesis,
-            domain: "other",
-            currency: "USD",
-            lab_type: "academic",
-            attachments: attachments.map((a) => ({
-              name: a.name,
-              url: a.url,
-              type: a.type,
-              size: a.size,
-              object_key: a.objectKey,
-            })),
-          }),
-        }
-      )
-
-      const questionId = project.questions?.[0]?.id
-      if (!questionId) {
-        throw new Error("Project created without question")
-      }
-
-      const qc = StartQcSchema.parse(
-        await apiFetchRaw(`/api/questions/${questionId}/literature-qc/`, {
-          method: "POST",
-        })
-      )
-
-      return { project, qc }
-    },
-    onSuccess: (result) => {
-      // Invalidate projects list so it appears in sidebar/pages
-      queryClient.invalidateQueries({ queryKey: invalidatePatterns.projects.all })
-      navigate(
-        `/runs/${result.qc.agent_run_id}?qcRunId=${result.qc.qc_run_id}&projectId=${result.project.id}`
-      )
-    },
-  })
+  const authState = getAuthNavigationState({ draft: { hypothesis: draftHypothesis } })
 
   const handleSampleSelect = (hypothesis: string) => {
     setDraftHypothesis(hypothesis)
@@ -104,12 +50,14 @@ export function LandingPage() {
         <div className="flex items-center gap-4">
           <Link
             to="/login"
+            state={authState}
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Sign in
           </Link>
           <Link
             to="/signup"
+            state={authState}
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90"
           >
             Get Started
@@ -124,8 +72,8 @@ export function LandingPage() {
             How can I help design your next experiment?
           </h1>
           <p className="mt-3 max-w-2xl text-center text-muted-foreground">
-            Enter a hypothesis, and STRATA will run literature quality checks,
-            identify novelty signals, and draft a structured experiment plan with references, budget, and timeline.
+            Draft a hypothesis, then sign up or sign in to review and create your private project.
+            You choose when to start literature checks and experiment planning.
           </p>
         </div>
 
@@ -133,21 +81,18 @@ export function LandingPage() {
           <HypothesisInput
             value={draftHypothesis}
             onChange={setDraftHypothesis}
-            onSubmit={async (hypothesis, attachments) => {
-              await createProject.mutateAsync({ hypothesis, attachments })
+            onSubmit={(hypothesis) => {
+              navigate("/signup", { state: getAuthNavigationState({ draft: { hypothesis } }) })
             }}
-            isSubmitting={createProject.isPending}
+            allowAttachments={false}
+            maxLength={MAX_HYPOTHESIS_DRAFT_LENGTH}
+            submitLabel="Continue to sign up"
           />
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            Continue to sign up or sign in. Review before creating; add attachments after signing in.
+            Drafts can contain up to 10,000 characters.
+          </p>
         </div>
-
-        {/* Error message */}
-        {createProject.error && (
-          <div className="mt-4 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {createProject.error instanceof Error
-              ? createProject.error.message
-              : "Failed to create project"}
-          </div>
-        )}
 
         {/* Sample hypotheses */}
         <div className="mt-8 w-full max-w-5xl">
@@ -164,8 +109,7 @@ export function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border px-8 py-4">
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
-          <span>API Online</span>
+          <span>Your projects are private</span>
           <span className="mx-2">•</span>
           <span>Pipeline: Input / QC / Plan / Review</span>
         </div>

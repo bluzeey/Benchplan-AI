@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -8,10 +8,13 @@ import { StrataLogo } from "@/components/ui/strata-logo"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { useAuth } from "@/app/auth-provider"
 import { ensureCsrfToken } from "@/lib/api"
+import { getAuthDestination, getAuthNavigationState } from "@/lib/auth-destination"
 
 export function LoginPage() {
   const { login, error } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const authState = getAuthNavigationState(location.state)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
@@ -27,7 +30,8 @@ export function LoginPage() {
     setIsLoading(true)
     try {
       await login(formData.email, formData.password)
-      navigate("/dashboard")
+      const destination = getAuthDestination(authState)
+      navigate(destination.to, { replace: true, state: destination.state })
     } catch {
       // Error is handled by auth provider
     } finally {
@@ -50,7 +54,7 @@ export function LoginPage() {
             Welcome back
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sign in to continue planning experiments
+            {authState.draft ? "Sign in to review your draft and create a private project" : "Sign in to continue planning experiments"}
           </p>
         </div>
 
@@ -109,7 +113,7 @@ export function LoginPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/signup" className="font-medium text-primary hover:opacity-80">
+            <Link to="/signup" state={authState} className="font-medium text-primary hover:opacity-80">
               Create one
             </Link>
           </p>

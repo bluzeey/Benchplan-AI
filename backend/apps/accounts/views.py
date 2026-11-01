@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authentication import SessionAuthentication
 from django.contrib.auth import login, logout
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
@@ -14,6 +15,8 @@ class SignupView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
+        # SessionAuthentication checks CSRF only for users already signed in.
+        SessionAuthentication().enforce_csrf(request)
         serializer = SignupSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -29,6 +32,7 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
+        SessionAuthentication().enforce_csrf(request)
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data["user"]

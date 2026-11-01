@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { apiFetch, apiFetchRaw } from "@/lib/api"
+import { apiFetch, apiFetchRaw, API_BASE_URL } from "@/lib/api"
 import { ExperimentPlanSchema, ProjectSchema, PlansListSchema } from "@/lib/schemas"
 import { queryKeys, invalidatePatterns } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
@@ -170,7 +170,7 @@ export function ProjectPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-                    <a href={att.url} target="_blank" rel="noreferrer" download={att.name}>
+                    <a href={att.url.startsWith("/api/") ? `${API_BASE_URL}${att.url}` : att.url} target="_blank" rel="noreferrer" download={att.name}>
                       <Download className="h-4 w-4" />
                     </a>
                   </Button>

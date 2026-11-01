@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,6 +21,10 @@ def env_list(name: str, default: str = "") -> list[str]:
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key")
 DEBUG = env_bool("DJANGO_DEBUG", True)
+if not DEBUG and (
+    len(SECRET_KEY) < 50 or len(set(SECRET_KEY)) < 5 or SECRET_KEY.startswith("django-insecure-")
+):
+    raise ImproperlyConfigured("Configure a strong private DJANGO_SECRET_KEY before running in production.")
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "*")
 if "*" not in ALLOWED_HOSTS:
     for railway_host in (
@@ -52,6 +57,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.common.middleware.PrivateApiResponsesMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -117,7 +123,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",
     ],
 }
 
@@ -125,6 +131,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "BenchPlan AI API",
     "DESCRIPTION": "Experiment planning and literature QC API",
     "VERSION": "0.1.0",
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
 }
 
 # CORS Configuration
@@ -164,6 +171,8 @@ PLANNING_V2_ENABLED = os.getenv("PLANNING_V2_ENABLED", "true").lower() in ("true
 
 # Security settings for production
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
+# Enable only behind the controlled ingress, which replaces this header.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if env_bool("TRUST_PROXY_HEADERS", False) else None
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
