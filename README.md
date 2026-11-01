@@ -54,6 +54,12 @@ at `https://benchplan-api.granveo.com`. Keep that rule before the SPA fallback.
 test, set it to an empty string and set `DEV_API_PROXY_TARGET` to the local API
 or private SSH tunnel. API responses and signed file locations must not be cached.
 
+The Vercel project also has a matching CDN rule named `Benchplan API → Hostinger`:
+regex `^(/api/.*)$` rewrites to `https://benchplan-api.granveo.com$1`.
+Preserve the complete path, including its trailing slash. Vercel's project-rule
+destinations use `$1` captures; using `:path*` literally or dropping Django's
+trailing slash breaks API routing. Keep this rule aligned with repository config.
+
 Anyone can register and sign in, and each account can access only its own
 projects, runs, plans, reviews, exports and files. Signup/login also require the
 CSRF token returned by `/api/csrf/`. The public landing page carries a draft
